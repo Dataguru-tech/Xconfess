@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/app/lib/api/queryKeys";
 import { AUTH_TOKEN_KEY } from "@/app/lib/api/constants";
 import { useFocusTrap } from "@/app/lib/hooks/useFocusTrap";
-import { getApiBaseUrl } from "@/app/lib/config";
+import { getWsUrl } from "@/app/lib/config";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 
 /**
@@ -77,7 +77,7 @@ export default function AdminLayout({
         : null;
     if (!token) return;
 
-    const baseUrl = getApiBaseUrl();
+    const baseUrl = getWsUrl();
     if (!baseUrl) return;
 
     const socket: Socket = io(`${baseUrl}/admin`, {
