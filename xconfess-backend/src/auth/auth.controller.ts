@@ -23,6 +23,8 @@ import { Request } from 'express';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { AuthService } from './auth.service';
+import { StepUpService } from './step-up.service';
+import { StepUpDto } from './dto/step-up.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -35,7 +37,41 @@ import { RateLimit } from './guard/rate-limit.decorator';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly stepUpService: StepUpService,
+  ) {}
+
+  @Post('step-up')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @RateLimit(5, 60)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Re-authenticate (password or TOTP) to obtain a short-lived step-up proof',
+    description:
+      'Returns a step-up token to be sent in the "x-step-up-token" header on ' +
+      'destructive admin actions. The proof expires quickly.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Step-up proof issued.',
+    schema: {
+      example: {
+        stepUpToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        expiresIn: 300,
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Step-up verification failed.' })
+  async stepUp(
+    @GetUser('id') userId: number,
+    @Body() dto: StepUpDto,
+  ): Promise<{ stepUpToken: string; expiresIn: number }> {
+    return this.stepUpService.createProof(userId, dto);
+  }
 
   @Post('2fa/setup')
   @UseGuards(JwtAuthGuard)
