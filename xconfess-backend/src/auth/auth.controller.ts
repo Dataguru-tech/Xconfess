@@ -6,6 +6,7 @@ import {
   HttpStatus,
   BadRequestException,
   Req,
+  Res,
   Get,
   UseGuards,
   UnauthorizedException,
@@ -19,7 +20,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { AuthService } from './auth.service';
@@ -31,6 +32,10 @@ import { GetUser } from './get-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { CryptoUtil } from '../common/crypto.util';
 import { RateLimit } from './guard/rate-limit.decorator';
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_CLEAR_OPTIONS,
+} from './cookie-config';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -276,15 +281,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Log out current user (client-side token discard)' })
+  @ApiOperation({ summary: 'Log out current user — clears the session cookie' })
   @ApiResponse({
     status: 200,
-    description: 'Logout acknowledged.',
+    description: 'Logout acknowledged. Session cookie cleared.',
     schema: { example: { message: 'Logged out successfully' } },
   })
-  async logout(): Promise<{ message: string }> {
-    // In a stateless JWT setup, logout is mainly client-side
-    // but we can add token blacklisting here if needed
+  logout(@Res({ passthrough: true }) res: Response): { message: string } {
+    // Clear the session cookie with the exact same attribute tuple used when
+    // it was written (name, path, sameSite, httpOnly, secure).  Using passthrough
+    // lets NestJS continue to handle the response body normally.
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
     return { message: 'Logged out successfully' };
   }
 
