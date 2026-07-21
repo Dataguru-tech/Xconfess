@@ -10,6 +10,11 @@ module.exports = {
       },
     ],
   },
+  // Jest 30 ships nested ESM-only packages (ansi-styles v6, chalk v5, etc.)
+  // that must be transformed by ts-jest/babel rather than executed as-is.
+  transformIgnorePatterns: [
+    '/node_modules/(?!(ansi-styles|chalk|strip-ansi|ansi-regex|@jest/console|@jest/reporters|@jest/core|jest-circus|jest-config|jest-each|jest-cli|jest-message-util|jest-diff|jest-matcher-utils|jest-snapshot|@jest/expect)/)',
+  ],
   testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/**/*.spec.ts'],
   testPathIgnorePatterns: [
     '/node_modules/',
