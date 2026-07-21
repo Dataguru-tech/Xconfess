@@ -48,10 +48,13 @@ export default function AdminLayout({
   );
 
   useEffect(() => {
-    // In development mock mode, skip real auth so local UI work is unblocked.
-    // This path is compiled away in production builds (NODE_ENV check is
-    // evaluated at build time by Next.js / webpack dead-code elimination).
-    if (isDevBypassEnabled()) return;
+    // In development mock mode, skip real auth checks (but NOT role checks)
+    if (isDevBypassEnabled()) {
+      if (user?.role !== "admin") {
+        router.replace("/dashboard");
+      }
+      return;
+    }
 
     if (isLoading) {
       return;
@@ -148,14 +151,18 @@ export default function AdminLayout({
     trapFocus: true,
   });
 
-  if (!isDevBypassEnabled()) {
-    if (isLoading) {
-      return null;
-    }
+  if (isLoading) {
+    return null;
+  }
 
-    if (!isAuthenticated || user?.role !== "admin") {
+  if (!isDevBypassEnabled()) {
+    if (!isAuthenticated) {
       return null;
     }
+  }
+
+  if (user?.role !== "admin") {
+    return null;
   }
 
   return (
