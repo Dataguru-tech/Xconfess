@@ -1,4 +1,4 @@
-module.exports = {
+﻿module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   setupFiles: ['<rootDir>/jest.setup.ts'],
@@ -11,6 +11,7 @@ module.exports = {
     ],
   },
   testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/**/*.spec.ts'],
+  transformIgnorePatterns: ['/node_modules/(?!(ansi-styles)/)'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '<rootDir>/xconfess-backend/',
@@ -27,3 +28,4 @@ module.exports = {
     '^@faker-js/faker/\\.$': '<rootDir>/test/utils/faker-stub.ts',
   },
 };
+
