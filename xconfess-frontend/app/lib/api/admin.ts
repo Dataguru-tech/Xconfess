@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { stepUpHeader } from './stepUp';
 import type {
   FailedJobsResponse,
   FailedJobsFilter,
@@ -192,17 +193,21 @@ export const adminApi = {
   },
 
   // Confessions
-  deleteConfession: async (id: string, reason?: string) => {
+  // Destructive actions require a recent step-up proof (see requestStepUp).
+  deleteConfession: async (id: string, reason?: string, stepUpToken?: string) => {
     const response = await apiClient.delete(`/api/admin/confessions/${id}`, {
       data: { reason },
+      headers: stepUpHeader(stepUpToken),
     });
     return response.data;
   },
 
-  hideConfession: async (id: string, reason?: string) => {
-    const response = await apiClient.patch(`/api/admin/confessions/${id}/hide`, {
-      reason,
-    });
+  hideConfession: async (id: string, reason?: string, stepUpToken?: string) => {
+    const response = await apiClient.patch(
+      `/api/admin/confessions/${id}/hide`,
+      { reason },
+      { headers: stepUpHeader(stepUpToken) },
+    );
     return response.data;
   },
 
@@ -230,18 +235,30 @@ export const adminApi = {
     return response.data;
   },
 
-  updateUserRole: async (id: string, role: AdminUserRole) => {
-    const response = await apiClient.patch(`/api/admin/users/${id}/role`, {
-      role,
-    });
+  updateUserRole: async (
+    id: string,
+    role: AdminUserRole,
+    stepUpToken?: string,
+  ) => {
+    const response = await apiClient.patch(
+      `/api/admin/users/${id}/role`,
+      { role },
+      { headers: stepUpHeader(stepUpToken) },
+    );
     return response.data;
   },
 
-  banUser: async (id: string, reason?: string, durationDays?: number | null) => {
-    const response = await apiClient.patch(`/api/admin/users/${id}/ban`, {
-      reason,
-      durationDays,
-    });
+  banUser: async (
+    id: string,
+    reason?: string,
+    durationDays?: number | null,
+    stepUpToken?: string,
+  ) => {
+    const response = await apiClient.patch(
+      `/api/admin/users/${id}/ban`,
+      { reason, durationDays },
+      { headers: stepUpHeader(stepUpToken) },
+    );
     return response.data;
   },
 
