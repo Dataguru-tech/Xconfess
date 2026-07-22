@@ -74,6 +74,12 @@ export enum AuditActionType {
   STELLAR_ANCHOR_RETRY = 'stellar_anchor_retry',
   STELLAR_ANCHOR_FAILED = 'stellar_anchor_failed',
   TIP_RECONCILIATION_DEAD_LETTER = 'tip_reconciliation_dead_letter',
+
+  // Feature Flag actions
+  FEATURE_FLAG_CREATED = 'feature_flag_created',
+  FEATURE_FLAG_UPDATED = 'feature_flag_updated',
+  FEATURE_FLAG_DELETED = 'feature_flag_deleted',
+  FEATURE_FLAG_ROLLED_BACK = 'feature_flag_rolled_back',
 }
 
 @Entity('audit_logs')
