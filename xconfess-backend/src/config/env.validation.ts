@@ -39,13 +39,27 @@ export const envValidationSchema = Joi.object({
     .optional(),
 
   // ── Auth ──────────────────────────────────────────────────────────────
-  JWT_SECRET: Joi.string().min(8).required().messages({
-    'any.required': 'JWT_SECRET is required – generate a strong random string.',
-    'string.min': 'JWT_SECRET must be at least 8 characters.',
+ JWT_SECRET: Joi.string().min(32).required().messages({
+    'any.required':
+      'JWT_SECRET is required – generate a strong random string (e.g. `openssl rand -base64 48`).',
+    'string.min':
+      'JWT_SECRET must be at least 32 characters long for production-strength signing.',
   }),
 
   // ── App / URLs ────────────────────────────────────────────────────────
-  APP_SECRET: Joi.string().optional(),
+ APP_SECRET: Joi.string()
+    .min(32)
+    .when('NODE_ENV', {
+      is: Joi.valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    })
+    .messages({
+      'any.required':
+        'APP_SECRET is required in production and staging – generate a strong random string (e.g. `openssl rand -base64 48`).',
+      'string.min':
+        'APP_SECRET must be at least 32 characters long for production-strength security.',
+    }),
   BACKEND_URL: Joi.string().uri().optional(),
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
 

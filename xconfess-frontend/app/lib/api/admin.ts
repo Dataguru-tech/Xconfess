@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { stepUpHeader } from './stepUp';
 import type {
   FailedJobsResponse,
   FailedJobsFilter,
@@ -196,19 +197,23 @@ export const adminApi = {
     return response.data as ReportStats;
   },
 
-  // Confessions
+
+  // Destructive actions require a recent step-up proof (see requestStepUp).
   deleteConfession: async (id: string, reason?: string, stepUpToken?: string) => {
     const response = await apiClient.delete(`/api/admin/confessions/${id}`, {
       data: { reason },
-      headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
+      headers: stepUpHeader(stepUpToken),
     });
     return response.data;
   },
 
   hideConfession: async (id: string, reason?: string, stepUpToken?: string) => {
-    const response = await apiClient.patch(`/api/admin/confessions/${id}/hide`, { reason }, {
-      headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
-    });
+    const response = await apiClient.patch(
+      `/api/admin/confessions/${id}/hide`,
+      { reason },
+      { headers: stepUpHeader(stepUpToken) },
+    );
+
     return response.data;
   },
 
@@ -236,17 +241,31 @@ export const adminApi = {
     return response.data;
   },
 
-  updateUserRole: async (id: string, role: AdminUserRole, stepUpToken?: string) => {
-    const response = await apiClient.patch(`/api/admin/users/${id}/role`, { role }, {
-      headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
-    });
+  updateUserRole: async (
+    id: string,
+    role: AdminUserRole,
+    stepUpToken?: string,
+  ) => {
+    const response = await apiClient.patch(
+      `/api/admin/users/${id}/role`,
+      { role },
+      { headers: stepUpHeader(stepUpToken) },
+    );
     return response.data;
   },
 
-  banUser: async (id: string, reason?: string, durationDays?: number | null, stepUpToken?: string) => {
-    const response = await apiClient.patch(`/api/admin/users/${id}/ban`, { reason, durationDays }, {
-      headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
-    });
+  banUser: async (
+    id: string,
+    reason?: string,
+    durationDays?: number | null,
+    stepUpToken?: string,
+  ) => {
+    const response = await apiClient.patch(
+      `/api/admin/users/${id}/ban`,
+      { reason, durationDays },
+      { headers: stepUpHeader(stepUpToken) },
+    );
+
     return response.data;
   },
 

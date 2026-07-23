@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-import { StepUpGuard } from '../auth/step-up.guard';
+import { StepUpGuard } from '../auth/guards/step-up.guard';
 import { AdminService } from './services/admin.service';
 import { ModerationService } from './services/moderation.service';
 import { ModerationTemplateService } from '../comment/moderation-template.service';
@@ -306,6 +306,7 @@ export class AdminController {
   }
   // Confessions
   @Delete('confessions/:id')
+  @UseGuards(StepUpGuard)
   @HttpCode(HttpStatus.OK)
   @UseGuards(StepUpGuard)
   @ApiOperation({ summary: 'Admin-delete a confession' })
@@ -315,6 +316,10 @@ export class AdminController {
     status: 200,
     description: 'Confession deleted.',
     schema: { example: { message: 'Confession deleted successfully' } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Missing or expired step-up proof.',
   })
   async deleteConfession(
     @Param('id') id: string,
@@ -332,11 +337,16 @@ export class AdminController {
   }
 
   @Patch('confessions/:id/hide')
+  @UseGuards(StepUpGuard)
   @HttpCode(HttpStatus.OK)
   @UseGuards(StepUpGuard)
   @ApiOperation({ summary: 'Hide a confession from public view (admin only)' })
   @ApiParam({ name: 'id', description: 'Confession UUID' })
   @ApiResponse({ status: 200, description: 'Confession hidden.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Missing or expired step-up proof.',
+  })
   async hideConfession(
     @Param('id') id: string,
     @Body() body: { reason?: string },
@@ -414,12 +424,17 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
+  @UseGuards(StepUpGuard)
   @HttpCode(HttpStatus.OK)
   @UseGuards(StepUpGuard)
   @ApiOperation({ summary: 'Change a user role' })
   @ApiParam({ name: 'id', description: 'User numeric ID' })
   @ApiBody({ schema: { example: { role: UserRole.MODERATOR } } })
   @ApiResponse({ status: 200, description: 'User role updated.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Missing or expired step-up proof.',
+  })
   async updateUserRole(
     @Param('id') id: string,
     @Body() dto: UpdateUserRoleDto,
@@ -435,6 +450,7 @@ export class AdminController {
   }
 
   @Patch('users/:id/ban')
+  @UseGuards(StepUpGuard)
   @HttpCode(HttpStatus.OK)
   @UseGuards(StepUpGuard)
   @ApiOperation({ summary: 'Ban a user account' })
@@ -445,6 +461,10 @@ export class AdminController {
     },
   })
   @ApiResponse({ status: 200, description: 'User banned.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Missing or expired step-up proof.',
+  })
   async banUser(
     @Param('id') id: string,
     @Body() dto: BanUserDto,
@@ -502,6 +522,7 @@ export class AdminController {
   }
 
   @Delete('templates/:id')
+  @UseGuards(StepUpGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTemplate(@Param('id') id: string) {
     await this.moderationTemplateService.delete(parseInt(id, 10));

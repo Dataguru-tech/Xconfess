@@ -1,71 +1,91 @@
 import {
   CanActivate,
+  Controller,
+  Delete,
   ExecutionContext,
   INestApplication,
+  Param,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import request from 'supertest';
-import { AdminGuard } from '../src/auth/admin.guard';
+import {
+  StepUpGuard,
+  STEP_UP_TOKEN_HEADER,
+} from '../src/auth/guards/step-up.guard';
+import {
+  StepUpService,
+  STEP_UP_TOKEN_PURPOSE,
+} from '../src/auth/step-up.service';
 import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
-import { StepUpGuard } from '../src/auth/step-up.guard';
-import { AdminController } from '../src/admin/admin.controller';
-import { AdminService } from '../src/admin/services/admin.service';
-import { ModerationService } from '../src/admin/services/moderation.service';
-import { ModerationTemplateService } from '../src/comment/moderation-template.service';
-import { AuditLogService } from '../src/audit-log/audit-log.service';
-import { StellarDiagnosticsService } from '../src/admin/services/stellar-diagnostics.service';
+import { AdminGuard } from '../src/auth/admin.guard';
+import { ErrorCode } from '../src/common/errors/error-codes';
 import { UserRole } from '../src/user/entities/user.entity';
 
-class FakeJwtAuthGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
+const JWT_SECRET = 'step-up-e2e-secret';
+const ADMIN_ID = 42;
 
-    if (!authHeader) {
-      throw new UnauthorizedException('Unauthorized');
-    }
-
-    if (authHeader === 'Bearer admin-token') {
-      request.user = { id: 1, userId: 1, role: UserRole.ADMIN };
-      return true;
-    }
-
-    throw new UnauthorizedException('Unauthorized');
+/**
+ * Minimal stand-in for a destructive admin endpoint. It mirrors the real
+ * admin controller's guard stack (JwtAuthGuard + AdminGuard at the class level,
+ * StepUpGuard on the destructive route) without pulling the full application
+ * graph into the test.
+ */
+@Controller('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
+class TestAdminController {
+  @Delete('confessions/:id')
+  @UseGuards(StepUpGuard)
+  deleteConfession(@Param('id') id: string) {
+    return { message: 'Confession deleted successfully', id };
   }
 }
 
-describe('Admin Step-Up Re-Authentication (e2e)', () => {
+class FakeAdminAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const req = context.switchToHttp().getRequest();
+    if (req.headers.authorization !== 'Bearer admin-token') {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    req.user = { id: ADMIN_ID, role: UserRole.ADMIN };
+    return true;
+  }
+}
+
+describe('Admin step-up authentication (e2e)', () => {
   let app: INestApplication;
   let jwtService: JwtService;
 
-  const adminService = {
-    deleteConfession: jest.fn().mockResolvedValue(undefined),
-    banUser: jest.fn().mockResolvedValue({ id: 1, username: 'target-user' }),
-  };
+  const signProof = (
+    sub: number,
+    purpose: string = STEP_UP_TOKEN_PURPOSE,
+    expiresIn: string | number = 300,
+  ) => jwtService.sign({ sub, purpose }, { expiresIn: expiresIn as any });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        JwtModule.register({
-          secret: 'test-secret',
-          signOptions: { expiresIn: '1h' },
-        }),
-      ],
-      controllers: [AdminController],
+      imports: [JwtModule.register({ secret: JWT_SECRET })],
+      controllers: [TestAdminController],
       providers: [
-        AdminGuard,
         StepUpGuard,
-        { provide: AdminService, useValue: adminService },
-        { provide: ModerationService, useValue: {} },
-        { provide: ModerationTemplateService, useValue: {} },
-        { provide: AuditLogService, useValue: {} },
-        { provide: StellarDiagnosticsService, useValue: {} },
+        {
+          provide: StepUpService,
+          useFactory: (jwt: JwtService) =>
+            new StepUpService(
+              jwt,
+              { findById: jest.fn() } as any,
+              { get: () => '300' } as any,
+            ),
+          inject: [JwtService],
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useClass(FakeJwtAuthGuard)
+      .useClass(FakeAdminAuthGuard)
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -75,70 +95,57 @@ describe('Admin Step-Up Re-Authentication (e2e)', () => {
     jwtService = moduleFixture.get(JwtService);
   });
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('rejects a destructive action with no step-up token', async () => {
-    await request(app.getHttpServer())
-      .delete('/api/admin/confessions/conf-1')
-      .set('Authorization', 'Bearer admin-token')
-      .send({ reason: 'test' })
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe('AUTH_STEP_UP_REQUIRED');
-      });
-
-    expect(adminService.deleteConfession).not.toHaveBeenCalled();
-  });
-
-  it('rejects a destructive action with an expired/invalid step-up token', async () => {
-    await request(app.getHttpServer())
-      .delete('/api/admin/confessions/conf-1')
-      .set('Authorization', 'Bearer admin-token')
-      .set('X-Step-Up-Token', 'not-a-real-token')
-      .send({ reason: 'test' })
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe('AUTH_STEP_UP_EXPIRED');
-      });
-
-    expect(adminService.deleteConfession).not.toHaveBeenCalled();
-  });
-
-  it('allows a destructive action with a valid, matching step-up token', async () => {
-    const stepUpToken = jwtService.sign({ sub: 1, stepUp: true });
-
-    await request(app.getHttpServer())
-      .delete('/api/admin/confessions/conf-1')
-      .set('Authorization', 'Bearer admin-token')
-      .set('X-Step-Up-Token', stepUpToken)
-      .send({ reason: 'test' })
-      .expect(200)
-      .expect(({ body }) => {
-        expect(body.message).toBe('Confession deleted successfully');
-      });
-
-    expect(adminService.deleteConfession).toHaveBeenCalledTimes(1);
-  });
-
-  it('rejects a step-up token belonging to a different user', async () => {
-    const stepUpToken = jwtService.sign({ sub: 999, stepUp: true });
-
-    await request(app.getHttpServer())
-      .patch('/api/admin/users/2/ban')
-      .set('Authorization', 'Bearer admin-token')
-      .set('X-Step-Up-Token', stepUpToken)
-      .send({ reason: 'test' })
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe('AUTH_STEP_UP_REQUIRED');
-      });
-
-    expect(adminService.banUser).not.toHaveBeenCalled();
-  });
-
   afterAll(async () => {
     await app.close();
+  });
+
+  it('allows a destructive action with a valid step-up proof', async () => {
+    const proof = signProof(ADMIN_ID);
+
+    await request(app.getHttpServer())
+      .delete('/api/admin/confessions/abc-123')
+      .set('Authorization', 'Bearer admin-token')
+      .set(STEP_UP_TOKEN_HEADER, proof)
+      .expect(200);
+  });
+
+  it('rejects a destructive action without a step-up proof', async () => {
+    const res = await request(app.getHttpServer())
+      .delete('/api/admin/confessions/abc-123')
+      .set('Authorization', 'Bearer admin-token')
+      .expect(403);
+
+    expect(res.body.code).toBe(ErrorCode.AUTH_STEP_UP_REQUIRED);
+  });
+
+  it('rejects a destructive action with an expired step-up proof', async () => {
+    const proof = signProof(ADMIN_ID, STEP_UP_TOKEN_PURPOSE, '-1s');
+
+    const res = await request(app.getHttpServer())
+      .delete('/api/admin/confessions/abc-123')
+      .set('Authorization', 'Bearer admin-token')
+      .set(STEP_UP_TOKEN_HEADER, proof)
+      .expect(403);
+
+    expect(res.body.code).toBe(ErrorCode.AUTH_STEP_UP_EXPIRED);
+  });
+
+  it('rejects a proof minted for a different admin', async () => {
+    const proof = signProof(ADMIN_ID + 1);
+
+    const res = await request(app.getHttpServer())
+      .delete('/api/admin/confessions/abc-123')
+      .set('Authorization', 'Bearer admin-token')
+      .set(STEP_UP_TOKEN_HEADER, proof)
+      .expect(403);
+
+    expect(res.body.code).toBe(ErrorCode.AUTH_STEP_UP_INVALID);
+  });
+
+  it('rejects a request that is not authenticated as admin', async () => {
+    await request(app.getHttpServer())
+      .delete('/api/admin/confessions/abc-123')
+      .set(STEP_UP_TOKEN_HEADER, signProof(ADMIN_ID))
+      .expect(401);
   });
 });
