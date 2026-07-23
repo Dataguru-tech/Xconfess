@@ -1,4 +1,4 @@
-import {
+﻿import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
@@ -35,6 +35,7 @@ export enum AuditActionType {
   NOTIFICATION_SUPPRESSED = 'notification_suppressed',
   NOTIFICATION_DLQ_REPLAY = 'notification_dlq_replay',
   NOTIFICATION_DLQ_CLEANUP = 'notification_dlq_cleanup',
+  EXPORT_RETENTION_CLEANUP = 'export_retention_cleanup',
 
   // Moderation
   MODERATION_ESCALATION = 'moderation_escalation',
@@ -165,3 +166,4 @@ export class AuditLog {
     this.createdAt = value;
   }
 }
+
