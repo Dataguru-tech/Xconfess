@@ -56,6 +56,7 @@ export type ExportLifecycleAction =
   | 'generation_completed'
   | 'link_refreshed'
   | 'downloaded'
+  | 'download_failed'
   | 'token_expired'
   | 'export_expired';
 
@@ -509,6 +510,8 @@ export class AuditLogService {
         return AuditActionType.EXPORT_LINK_REFRESHED;
       case 'downloaded':
         return AuditActionType.EXPORT_DOWNLOADED;
+      case 'download_failed':
+        return AuditActionType.EXPORT_DOWNLOAD_FAILED;
       case 'token_expired':
         return AuditActionType.EXPORT_TOKEN_EXPIRED;
       case 'export_expired':
@@ -1316,4 +1319,3 @@ export class AuditLogService {
     return null;
   }
 }
-

@@ -216,10 +216,11 @@ describe('DataCleanupService', () => {
       const updateCall = mockExportRepository.update.mock.calls[0];
       const updateFields = updateCall[1];
 
-      expect(Object.keys(updateFields)).toHaveLength(3);
+      expect(Object.keys(updateFields)).toHaveLength(4);
       expect(updateFields.fileData).toBeNull();
       expect(updateFields.status).toBe('EXPIRED');
       expect(updateFields.expiredAt).toBeInstanceOf(Date);
+      expect(updateFields.downloadTokenHash).toBeNull();
     });
 
     it('should not affect exports with terminal status that are recent', async () => {
@@ -342,6 +343,7 @@ describe('DataCleanupService', () => {
 
       expect(updateFields.status).toBe('EXPIRED');
       expect(updateFields.fileData).toBeNull();
+      expect(updateFields.downloadTokenHash).toBeNull();
     });
 
     it('should not log exported file data or user secrets during cleanup', async () => {
@@ -352,7 +354,7 @@ describe('DataCleanupService', () => {
           status: 'READY',
           createdAt: new Date('2026-03-01T00:00:00.000Z'),
           fileData: Buffer.from('secret exported file data'),
-          downloadToken: 'download-token-secret',
+          downloadTokenHash: 'download-token-secret',
         } as ExportRequest,
       ]);
       mockExportRepository.update.mockResolvedValue({

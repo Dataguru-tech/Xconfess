@@ -121,7 +121,12 @@ export class DataCleanupService {
             createdAt: LessThan(cutoff),
             status: In(CLEANUP_ELIGIBLE_STATUSES),
           },
-          { fileData: null, status: 'EXPIRED', expiredAt: new Date() },
+          {
+            fileData: null,
+            status: 'EXPIRED',
+            expiredAt: new Date(),
+            downloadTokenHash: null,
+          },
         );
 
         expiredCount = result.affected ?? 0;

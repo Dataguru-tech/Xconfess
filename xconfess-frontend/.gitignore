@@ -26,3 +26,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# test artifacts
+/test-results/
+lint_output.txt

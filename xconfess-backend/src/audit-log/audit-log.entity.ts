@@ -65,6 +65,7 @@ export enum AuditActionType {
   EXPORT_GENERATION_COMPLETED = 'export_generation_completed',
   EXPORT_LINK_REFRESHED = 'export_link_refreshed',
   EXPORT_DOWNLOADED = 'export_downloaded',
+  EXPORT_DOWNLOAD_FAILED = 'export_download_failed',
   EXPORT_TOKEN_EXPIRED = 'export_token_expired', // <-- ADDED
   EXPORT_EXPIRED = 'export_expired', // <-- ADDED
 
@@ -172,4 +173,3 @@ export class AuditLog {
     this.createdAt = value;
   }
 }
-
