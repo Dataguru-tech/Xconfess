@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, IsNull } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ExportRequest } from './entities/export-request.entity';
@@ -185,8 +185,11 @@ export class DataExportService {
     // link cannot be replayed after the first successful download.
     let token: string | undefined;
     if (chunkIndex === undefined) {
-      token = crypto.randomBytes(16).toString('hex');
-      await this.exportRepository.update(requestId, { downloadToken: token });
+      token = crypto.randomBytes(32).toString('base64url');
+      await this.exportRepository.update(requestId, {
+        downloadTokenHash: this.hashDownloadToken(token),
+        downloadedAt: null,
+      });
     }
 
     const dataToSign =
@@ -225,7 +228,7 @@ export class DataExportService {
    */
   async invalidateDownloadToken(requestId: string): Promise<void> {
     await this.exportRepository.update(requestId, {
-      downloadToken: null,
+      downloadTokenHash: null,
       downloadedAt: new Date(),
     });
   }
@@ -241,27 +244,36 @@ export class DataExportService {
    *
    * Returns false when any condition fails; callers should treat false as 403/410.
    */
- async validateAndConsumeToken(
+  async validateAndConsumeToken(
     requestId: string,
     userId: string,
     token: string,
   ): Promise<boolean> {
+    const tokenHash = this.hashDownloadToken(token);
     const record = await this.exportRepository.findOne({
       where: { id: requestId, userId },
-      select: ['downloadToken', 'downloadedAt', 'createdAt', 'status'] as any,
+      select: ['downloadTokenHash', 'downloadedAt', 'createdAt', 'status'] as any,
     });
 
-    // Token missing, already consumed, or mismatch.
-    if (!record || record.downloadToken !== token) return false;
+    if (!record) {
+      await this.recordFailedDownloadAttempt(requestId, 'not_found');
+      return false;
+    }
 
-    // Terminal-use guard: token was already used (downloadedAt is set).
-    if (record.downloadedAt !== null) return false;
+    if (
+      record.downloadedAt !== null ||
+      !record.downloadTokenHash ||
+      !this.secureCompare(record.downloadTokenHash, tokenHash)
+    ) {
+      await this.recordFailedDownloadAttempt(requestId, 'invalid_or_used');
+      return false;
+    }
 
     // Retention-window guard: export has exceeded its TTL.
     if (!this.isFileAvailable(record as Pick<ExportRequest, 'status' | 'createdAt'>)) {
       // Mark the token as expired and emit an audit event.
       await this.exportRepository.update(requestId, {
-        downloadToken: null,
+        downloadTokenHash: null,
         expiredAt: new Date(),
       });
 
@@ -283,7 +295,23 @@ export class DataExportService {
       return false;
     }
 
-    await this.invalidateDownloadToken(requestId);
+    const consumeResult = await this.exportRepository.update(
+      {
+        id: requestId,
+        userId,
+        downloadTokenHash: tokenHash,
+        downloadedAt: IsNull(),
+      },
+      {
+        downloadTokenHash: null,
+        downloadedAt: new Date(),
+      },
+    );
+
+    if ((consumeResult.affected ?? 0) !== 1) {
+      await this.recordFailedDownloadAttempt(requestId, 'replay_race');
+      return false;
+    }
 
     void this.auditLogService
       ?.logExportLifecycleEvent({
@@ -319,8 +347,8 @@ export class DataExportService {
     const result = await this.exportRepository
       .createQueryBuilder()
       .update(ExportRequest)
-      .set({ downloadToken: null, expiredAt: () => 'NOW()' })
-      .where('downloadToken IS NOT NULL')
+      .set({ downloadTokenHash: null, expiredAt: () => 'NOW()' })
+      .where('downloadTokenHash IS NOT NULL')
       .andWhere('downloadedAt IS NULL')
       .andWhere('createdAt < :cutoff', { cutoff })
       .execute();
@@ -427,6 +455,47 @@ export class DataExportService {
     return new Date(createdAt).getTime() + ttlMs;
   }
 
+  private hashDownloadToken(token: string): string {
+    const secret = this.configService.get<string>('app.appSecret', '');
+    return crypto
+      .createHmac('sha256', secret || 'APP_SECRET_NOT_SET')
+      .update(token)
+      .digest('hex');
+  }
+
+  private secureCompare(expected: string, actual: string): boolean {
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const actualBuffer = Buffer.from(actual, 'hex');
+
+    return (
+      expectedBuffer.length === actualBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, actualBuffer)
+    );
+  }
+
+  async recordFailedDownloadAttempt(
+    requestId: string,
+    reason:
+      | 'missing_token'
+      | 'invalid_signature'
+      | 'not_found'
+      | 'invalid_or_used'
+      | 'replay_race',
+  ): Promise<void> {
+    await this.auditLogService
+      ?.logExportLifecycleEvent({
+        action: 'download_failed',
+        actorType: 'system',
+        actorId: 'download-token-validator',
+        requestId,
+        exportId: requestId,
+        metadata: {
+          reason,
+        },
+      })
+      .catch(() => undefined);
+  }
+
   /** True when the underlying export file is still within its TTL window. */
   private isFileAvailable(
     request: Pick<ExportRequest, 'status' | 'createdAt'>,
@@ -437,9 +506,9 @@ export class DataExportService {
 
   /** True when a valid one-time token exists and the file is still available. */
   private hasActiveToken(
-    request: Pick<ExportRequest, 'status' | 'createdAt' | 'downloadToken'>,
+    request: Pick<ExportRequest, 'status' | 'createdAt' | 'downloadTokenHash'>,
   ): boolean {
-    return this.isFileAvailable(request) && request.downloadToken !== null;
+    return this.isFileAvailable(request) && request.downloadTokenHash != null;
   }
 
   private buildProgress(request: Partial<ExportRequest>): ExportProgress {
@@ -468,7 +537,7 @@ export class DataExportService {
       | 'expiredAt'
       | 'retryCount'
       | 'lastFailureReason'
-      | 'downloadToken'
+      | 'downloadTokenHash'
     >,
   ): Promise<ExportHistoryItem> {
     const expiresAt =
@@ -510,7 +579,7 @@ export class DataExportService {
     'expiredAt',
     'retryCount',
     'lastFailureReason',
-    'downloadToken',
+    'downloadTokenHash',
   ] as const;
 
   async getExportHistory(
