@@ -1,4 +1,4 @@
-﻿import * as Joi from 'joi';
+import * as Joi from 'joi';
 
 /**
  * Centralized environment-variable validation schema.
@@ -38,14 +38,28 @@ export const envValidationSchema = Joi.object({
     .valid('true', 'false', '1', '0', 'yes', 'no', 'on', 'off')
     .optional(),
 
-  // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  JWT_SECRET: Joi.string().min(8).required().messages({
-    'any.required': 'JWT_SECRET is required â€“ generate a strong random string.',
-    'string.min': 'JWT_SECRET must be at least 8 characters.',
+  // ---- Auth ----
+  JWT_SECRET: Joi.string().min(32).required().messages({
+    'any.required':
+      'JWT_SECRET is required - generate a strong random string (e.g. `openssl rand -base64 48`).',
+    'string.min':
+      'JWT_SECRET must be at least 32 characters long for production-strength signing.',
   }),
 
-  // â”€â”€ App / URLs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  APP_SECRET: Joi.string().optional(),
+  // ---- App / URLs ----
+  APP_SECRET: Joi.string()
+    .min(32)
+    .when('NODE_ENV', {
+      is: Joi.valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    })
+    .messages({
+      'any.required':
+        'APP_SECRET is required in production and staging - generate a strong random string (e.g. `openssl rand -base64 48`).',
+      'string.min':
+        'APP_SECRET must be at least 32 characters long for production-strength security.',
+    }),
   BACKEND_URL: Joi.string().uri().optional(),
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
 
