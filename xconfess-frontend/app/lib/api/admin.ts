@@ -146,6 +146,11 @@ export const adminApi = {
     return response.data;
   },
 
+  requestStepUp: async (payload: { password?: string; totpToken?: string }) => {
+    const response = await apiClient.post('/api/auth/step-up', payload);
+    return response.data as { stepUpToken: string; expiresIn: number };
+  },
+
   // Reports
   getReports: async (params?: {
     status?: string;
@@ -192,7 +197,7 @@ export const adminApi = {
     return response.data as ReportStats;
   },
 
-  // Confessions
+
   // Destructive actions require a recent step-up proof (see requestStepUp).
   deleteConfession: async (id: string, reason?: string, stepUpToken?: string) => {
     const response = await apiClient.delete(`/api/admin/confessions/${id}`, {
@@ -208,6 +213,7 @@ export const adminApi = {
       { reason },
       { headers: stepUpHeader(stepUpToken) },
     );
+
     return response.data;
   },
 
@@ -259,6 +265,7 @@ export const adminApi = {
       { reason, durationDays },
       { headers: stepUpHeader(stepUpToken) },
     );
+
     return response.data;
   },
 
