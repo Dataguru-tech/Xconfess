@@ -11,6 +11,7 @@ import {
   InvalidationPrefixes,
 } from 'src/cache/cache-namespace';
 import { toWindowBoundaries } from 'src/types/analytics.types';
+import { ANALYTICS_PRIVACY } from './analytics.constants';
 
 type TrendDirection = 'increasing' | 'decreasing' | 'stable';
 
@@ -411,10 +412,15 @@ export class AnalyticsService {
       .orderBy('date', 'ASC')
       .getRawMany<BucketCountRow>();
 
-    const dailyGrowth = this.getDateBuckets(range).map((date) => ({
-      date,
-      count: this.findBucketCount(rawGrowth, date),
-    }));
+    const dailyGrowth = this.getDateBuckets(range).map((date) => {
+      const count = this.findBucketCount(rawGrowth, date);
+      const suppressed = count < ANALYTICS_PRIVACY.MIN_COHORT_SIZE && count > 0;
+      return {
+        date,
+        count,
+        ...(suppressed && { suppressed }),
+      };
+    });
     const totalConfessions = dailyGrowth.reduce(
       (sum, item) => sum + item.count,
       0,
@@ -456,10 +462,15 @@ export class AnalyticsService {
       );
     const activityRows = this.toBucketRows(rawActivityRows, 'activeUsers');
 
-    const dailyActivity = this.getDateBuckets(range).map((date) => ({
-      date,
-      activeUsers: this.findBucketCount(activityRows, date, 'activeUsers'),
-    }));
+    const dailyActivity = this.getDateBuckets(range).map((date) => {
+      const activeUsers = this.findBucketCount(activityRows, date, 'activeUsers');
+      const suppressed = activeUsers < ANALYTICS_PRIVACY.MIN_COHORT_SIZE && activeUsers > 0;
+      return {
+        date,
+        activeUsers,
+        ...(suppressed && { suppressed }),
+      };
+    });
     const totalActiveUsers = dailyActivity.reduce(
       (sum, item) => sum + item.activeUsers,
       0,
@@ -497,10 +508,12 @@ export class AnalyticsService {
       total,
       distribution: distribution.map((item) => {
         const count = parseInt(item.count, 10);
+        const suppressed = count < ANALYTICS_PRIVACY.MIN_COHORT_SIZE && count > 0;
         return {
           type: item.type,
           count,
           percentage: total > 0 ? ((count / total) * 100).toFixed(2) : '0.00',
+          ...(suppressed && { suppressed }),
         };
       }),
       period: `${days} days`,
