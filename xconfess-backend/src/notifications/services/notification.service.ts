@@ -48,6 +48,18 @@ export class NotificationService {
       return;
     }
 
+    const userId = payload?.userId || payload?.recipientId;
+    if (userId) {
+      const canDeliver = await this.shouldDeliverEmail(userId, type);
+      if (!canDeliver) {
+        this.appLogger.warn(
+          `enqueueNotification skipped (email preference disabled): type=${type} userId=${userId}`,
+          'NotificationService',
+        );
+        return;
+      }
+    }
+
     await this.notificationQueue.add(
       'send-notification',
       {
@@ -62,6 +74,66 @@ export class NotificationService {
       jobName: 'send-notification',
       notificationType: type,
     });
+  }
+
+  /**
+   * Check whether a user should receive a realtime (in-app/WebSocket) notification.
+   * Pulls fresh preferences from DB to avoid stale cached decisions.
+   */
+  async shouldDeliverRealtime(userId: string, type: string): Promise<boolean> {
+    try {
+      const preference = await this.getUserPreference(userId);
+      if (!preference.enableInAppNotifications) return false;
+
+      const channelPrefs = await this.getUserChannelPreferences(
+        userId,
+        type as NotificationType,
+      );
+      if (channelPrefs && !channelPrefs.inApp) return false;
+
+      if (this.isQuietHours(preference)) return false;
+      if (await this.isQuietHoursForUser(userId)) return false;
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check whether a user should receive an email notification.
+   * Pulls fresh preferences from DB to avoid stale cached decisions.
+   */
+  async shouldDeliverEmail(userId: string, type: string): Promise<boolean> {
+    try {
+      const preference = await this.getUserPreference(userId);
+      if (!preference.enableEmailNotifications || !preference.emailAddress) {
+        return false;
+      }
+
+      if (
+        type === NotificationType.NEW_MESSAGE &&
+        !preference.emailNewMessage
+      ) {
+        return false;
+      }
+      if (
+        type === NotificationType.MESSAGE_BATCH &&
+        !preference.emailMessageBatch
+      ) {
+        return false;
+      }
+
+      const channelPrefs = await this.getUserChannelPreferences(
+        userId,
+        type as NotificationType,
+      );
+      if (channelPrefs && !channelPrefs.email) return false;
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async createNotification(
