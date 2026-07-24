@@ -132,9 +132,11 @@ describe('ReactionService', () => {
 
       const result = await service.createReaction(dto);
 
-      // Confession loaded with relations for notification lookup
+      // Confession loaded with relations for notification lookup, excluding soft-deleted
       expect(confessionRepo.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: dto.confessionId } }),
+        expect.objectContaining({
+          where: { id: dto.confessionId, isDeleted: false },
+        }),
       );
 
       expect(managerReactionRepo.create).toHaveBeenCalledWith({
@@ -190,6 +192,26 @@ describe('ReactionService', () => {
       );
 
       // Must not proceed to user/reaction lookup
+      expect(anonymousUserRepo.findOne).not.toHaveBeenCalled();
+      expect(reactionRepo.create).not.toHaveBeenCalled();
+    });
+
+    // ── Soft-delete consistency (#1449) ─────────────────────────────────────
+
+    it('throws NotFoundException when confession is soft-deleted', async () => {
+      // The repository query filters isDeleted: false, so a soft-deleted
+      // confession resolves as "not found" here, the same as a missing one.
+      confessionRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.createReaction(dto)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(confessionRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: dto.confessionId, isDeleted: false },
+        }),
+      );
       expect(anonymousUserRepo.findOne).not.toHaveBeenCalled();
       expect(reactionRepo.create).not.toHaveBeenCalled();
     });

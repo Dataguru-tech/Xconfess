@@ -808,8 +808,8 @@ export class ConfessionService {
     const skip = (page - 1) * limit;
     const [data, total] = await this.confessionRepo.findAndCount({
       where: [
-        { requiresReview: true },
-        { moderationStatus: ModerationStatus.FLAGGED as any },
+        { requiresReview: true, isDeleted: false },
+        { moderationStatus: ModerationStatus.FLAGGED as any, isDeleted: false },
       ],
       order: { created_at: 'DESC' },
       skip,
@@ -960,6 +960,7 @@ export class ConfessionService {
   async findAll(): Promise<ConfessionResponseDto[]> {
     try {
       const confessions = await this.confessionRepo.find({
+        where: { isDeleted: false },
         order: { created_at: 'DESC' },
       });
 
@@ -978,7 +979,7 @@ export class ConfessionService {
   async findOne(id: string): Promise<ConfessionResponseDto> {
     try {
       const confession = await this.confessionRepo.findOne({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!confession) {

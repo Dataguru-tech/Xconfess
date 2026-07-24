@@ -339,7 +339,9 @@ export class CommentService {
         "moderation",
         "moderation.commentId = comment.id",
       )
-      .where("comment.confession = :confessionId", { confessionId })
+      .where("comment.confession = :confessionId AND confession.isDeleted = false", {
+        confessionId,
+      })
       .andWhere("moderation.status = :status", {
         status: ModerationStatus.APPROVED,
       });

@@ -35,9 +35,9 @@ export class ReactionService {
   ) {}
 
   async createReaction(dto: CreateReactionDto): Promise<Reaction> {
-    // 1. Verify confession exists.
+    // 1. Verify confession exists and is not soft-deleted.
     const confession = await this.confessionRepo.findOne({
-      where: { id: dto.confessionId },
+      where: { id: dto.confessionId, isDeleted: false },
       relations: [
         'anonymousUser',
         'anonymousUser.userLinks',

@@ -120,9 +120,9 @@ export class AnalyticsService {
     const trending = await this.confessionRepository
       .createQueryBuilder('confession')
       .leftJoinAndSelect('confession.reactions', 'reaction')
-      .where('confession.createdAt >= :startAt', { startAt })
-      .andWhere('confession.createdAt < :endAt', { endAt })
-      .andWhere('confession.isPublished = :isPublished', { isPublished: true })
+      .where('confession.created_at >= :startAt', { startAt })
+      .andWhere('confession.created_at < :endAt', { endAt })
+      .andWhere('confession.isDeleted = false')
       .loadRelationCountAndMap(
         'confession.reactionCount',
         'confession.reactions',
@@ -197,21 +197,27 @@ export class AnalyticsService {
       return cached;
     }
 
+    // totalConfessions intentionally includes soft-deleted rows to track total
+    // platform volume (mirrors the admin analytics overview); publishedConfessions
+    // and totalReactions are the live-content figures and exclude deleted confessions.
     const [totalUsers, totalConfessions, totalReactions, publishedConfessions] =
       await Promise.all([
         this.userRepository.count(),
         this.confessionRepository.count(),
-        this.reactionRepository.count(),
-        // Note: isPublished field doesn't exist, using total count instead
+        this.reactionRepository
+          .createQueryBuilder('reaction')
+          .innerJoin('reaction.confession', 'confession')
+          .where('confession.isDeleted = false')
+          .getCount(),
         this.confessionRepository.count({ where: { isDeleted: false } }),
       ]);
 
-    // Get most popular category
+    // Get most popular category (excluding soft-deleted confessions)
     const categoryStats = (await this.confessionRepository
       .createQueryBuilder('confession')
       .select('confession.category', 'category')
       .addSelect('COUNT(*)', 'count')
-      .where('confession.isPublished = :isPublished', { isPublished: true })
+      .where('confession.isDeleted = false')
       .groupBy('confession.category')
       .orderBy('count', 'DESC')
       .limit(1)
@@ -408,6 +414,7 @@ export class AnalyticsService {
       .addSelect('COUNT(*)', 'count')
       .where('confession.created_at >= :startAt', { startAt: range.startAt })
       .andWhere('confession.created_at < :endAt', { endAt: range.endAt })
+      .andWhere('confession.isDeleted = false')
       .groupBy("DATE(confession.created_at AT TIME ZONE 'UTC')")
       .orderBy('date', 'ASC')
       .getRawMany<BucketCountRow>();
@@ -491,10 +498,12 @@ export class AnalyticsService {
   ): Promise<ReactionDistributionMetrics> {
     const distribution = await this.reactionRepository
       .createQueryBuilder('reaction')
+      .innerJoin('reaction.confession', 'confession')
       .select('reaction.emoji', 'type')
       .addSelect('COUNT(*)', 'count')
       .where('reaction.createdAt >= :startAt', { startAt: range.startAt })
       .andWhere('reaction.createdAt < :endAt', { endAt: range.endAt })
+      .andWhere('confession.isDeleted = false')
       .groupBy('reaction.emoji')
       .orderBy('type', 'ASC')
       .getRawMany<ReactionDistributionRow>();
