@@ -17,6 +17,8 @@ import { StellarService } from '../stellar/stellar.service';
 import { CacheService, CACHE_TTL } from '../cache/cache.service';
 import { TagService } from './tag.service';
 import { encryptConfession } from '../utils/confession-encryption';
+import { AnomalyDetectionService } from '../anomaly/anomaly-detection.service';
+import { ConfessionIdempotencyService } from './confession-idempotency.service';
 
 describe('ConfessionService', () => {
   let service: ConfessionService;
@@ -29,6 +31,7 @@ describe('ConfessionService', () => {
     qb = {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -101,6 +104,19 @@ describe('ConfessionService', () => {
           },
         },
         { provide: TagService, useValue: { validateTags: jest.fn() } },
+        {
+          provide: AnomalyDetectionService,
+          useValue: { getAdjustmentFactor: jest.fn().mockResolvedValue(1) },
+        },
+        {
+          provide: ConfessionIdempotencyService,
+          useValue: {
+            computePayloadHash: jest.fn(),
+            check: jest.fn(),
+            commitSuccess: jest.fn(),
+            commitFailure: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -160,6 +176,44 @@ describe('ConfessionService', () => {
       console.error('ERROR', e);
       throw e;
     }
+  });
+
+  describe('Soft-delete consistency (#1449)', () => {
+    it('findAll() excludes soft-deleted confessions', async () => {
+      repo.find = jest.fn().mockResolvedValue([]);
+
+      await service.findAll();
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { isDeleted: false } }),
+      );
+    });
+
+    it('findOne() excludes soft-deleted confessions', async () => {
+      repo.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne('deleted-id')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 'deleted-id', isDeleted: false },
+      });
+    });
+
+    it('getFlaggedConfessions() excludes soft-deleted confessions from both branches', async () => {
+      repo.findAndCount = jest.fn().mockResolvedValue([[], 0]);
+
+      await service.getFlaggedConfessions();
+
+      expect(repo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: [
+            { requiresReview: true, isDeleted: false },
+            expect.objectContaining({ isDeleted: false }),
+          ],
+        }),
+      );
+    });
   });
 
   describe('Cache TTL values (#1247)', () => {
@@ -251,10 +305,24 @@ describe('ConfessionService — anchor pending-state guard (#776)', () => {
             buildKey: jest.fn((...parts: string[]) => parts.join(':')),
             get: jest.fn().mockResolvedValue(null),
             set: jest.fn(),
+            del: jest.fn(),
             delPattern: jest.fn(),
           },
         },
         { provide: TagService, useValue: { validateTags: jest.fn() } },
+        {
+          provide: AnomalyDetectionService,
+          useValue: { getAdjustmentFactor: jest.fn().mockResolvedValue(1) },
+        },
+        {
+          provide: ConfessionIdempotencyService,
+          useValue: {
+            computePayloadHash: jest.fn(),
+            check: jest.fn(),
+            commitSuccess: jest.fn(),
+            commitFailure: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

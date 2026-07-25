@@ -121,6 +121,36 @@ describe('CommentService (soft‑delete)', () => {
         'comment',
       );
     });
+
+    // ── Soft-delete consistency (#1449) ─────────────────────────────────────
+
+    it(`excludes comments belonging to a soft-deleted confession`, async () => {
+      const fakeQB: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      (commentRepo as any).createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(fakeQB);
+      const queryDto: GetCommentsQueryDto = {
+        sortField: CommentSortField.CREATED_AT,
+        sortOrder: SortOrder.DESC,
+        limit: 20,
+      };
+
+      await service.findByConfessionId('conf1', queryDto);
+
+      expect(fakeQB.where).toHaveBeenCalledWith(
+        expect.stringContaining('confession.isDeleted = false'),
+        expect.objectContaining({ confessionId: 'conf1' }),
+      );
+    });
   });
 
   describe(`delete()`, () => {
