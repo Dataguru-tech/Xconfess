@@ -1025,26 +1025,38 @@ export class ConfessionService {
     }
 
     // A stellarTxHash without isAnchored means a prior submission is pending
-    // on-chain. Return the existing pending state instead of starting new work.
+    // on-chain. If the same tx hash is provided, return the existing pending
+    // state (idempotent replay). If a different tx hash is provided, allow
+    // the update to enable safe retry after a stale/failed anchor.
     if (confession.stellarTxHash && !confession.isAnchored) {
-      this.logger.log({
-        event: 'anchor_replay',
-        confessionId: confession.id,
-        stellarTxHash: confession.stellarTxHash,
-      });
+      if (confession.stellarTxHash === dto.stellarTxHash) {
+        this.logger.log({
+          event: 'anchor_replay',
+          confessionId: confession.id,
+          stellarTxHash: confession.stellarTxHash,
+        });
 
-      return {
+        return {
+          confessionId: confession.id,
+          stellarTxHash: confession.stellarTxHash,
+          stellarHash: confession.stellarHash,
+          isAnchored: false,
+          anchorPending: true,
+          message:
+            'An anchor submission is already pending for this confession. Wait for it to confirm or fail before retrying.',
+          stellarExplorerUrl: this.stellarService.getExplorerUrl(
+            confession.stellarTxHash,
+          ),
+        };
+      }
+
+      // Different tx hash provided — this is a retry. Log and continue.
+      this.logger.log({
+        event: 'anchor_retry_replace',
         confessionId: confession.id,
-        stellarTxHash: confession.stellarTxHash,
-        stellarHash: confession.stellarHash,
-        isAnchored: false,
-        anchorPending: true,
-        message:
-          'An anchor submission is already pending for this confession. Wait for it to confirm or fail before retrying.',
-        stellarExplorerUrl: this.stellarService.getExplorerUrl(
-          confession.stellarTxHash,
-        ),
-      };
+        previousTxHash: confession.stellarTxHash,
+        newTxHash: dto.stellarTxHash,
+      });
     }
 
     if (!this.stellarService.isValidTxHash(dto.stellarTxHash)) {

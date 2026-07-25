@@ -49,6 +49,16 @@ interface ProcessedTransactionData {
 // PostgreSQL unique-violation error code
 const PG_UNIQUE_VIOLATION = '23505';
 
+/**
+ * Tip amount bounds — must be consistent with contract and frontend.
+ * - MIN_TIP_AMOUNT: 0.1 XLM (minimum viable tip)
+ * - MAX_TIP_AMOUNT: 10,000 XLM (upper bound to prevent overflow and abuse)
+ * - TIP_PRECISION: 7 decimal places (Stellar's native precision for assets)
+ */
+export const MIN_TIP_AMOUNT = 0.1;
+export const MAX_TIP_AMOUNT = 10_000;
+export const TIP_PRECISION = 7;
+
 @Injectable()
 export class TippingService {
   private static readonly MAX_RECEIPT_PROOF_METADATA_LEN = 128;
@@ -304,16 +314,46 @@ export class TippingService {
 
       const processedData = await this.processTransactionData(txData, dto.txId);
 
-      // ── 7. Minimum amount guard ───────────────────────────────────────
-      const MIN_TIP_AMOUNT = 0.1;
+      // ── 7. Amount bounds validation ─────────────────────────────────────
       if (processedData.amount < MIN_TIP_AMOUNT) {
         await this.updateRetryMetadata(sentinelTip.id, 'invalid_amount', {
           amount: processedData.amount,
           minRequired: MIN_TIP_AMOUNT,
+          maxAllowed: MAX_TIP_AMOUNT,
+          reason: 'below_minimum',
         });
         await this.releaseProcessingLock(sentinelTip.id);
         throw new BadRequestException(
           `Tip amount ${processedData.amount} XLM is below minimum of ${MIN_TIP_AMOUNT} XLM`,
+        );
+      }
+
+      if (processedData.amount > MAX_TIP_AMOUNT) {
+        await this.updateRetryMetadata(sentinelTip.id, 'invalid_amount', {
+          amount: processedData.amount,
+          minRequired: MIN_TIP_AMOUNT,
+          maxAllowed: MAX_TIP_AMOUNT,
+          reason: 'above_maximum',
+        });
+        await this.releaseProcessingLock(sentinelTip.id);
+        throw new BadRequestException(
+          `Tip amount ${processedData.amount} XLM exceeds maximum of ${MAX_TIP_AMOUNT} XLM`,
+        );
+      }
+
+      // Validate precision: no more than TIP_PRECISION decimal places
+      const amountStr = processedData.amount.toString();
+      const decimalPart = amountStr.includes('.') ? amountStr.split('.')[1] : '';
+      if (decimalPart.length > TIP_PRECISION) {
+        await this.updateRetryMetadata(sentinelTip.id, 'invalid_amount', {
+          amount: processedData.amount,
+          decimalPlaces: decimalPart.length,
+          maxPrecision: TIP_PRECISION,
+          reason: 'excess_precision',
+        });
+        await this.releaseProcessingLock(sentinelTip.id);
+        throw new BadRequestException(
+          `Tip amount has ${decimalPart.length} decimal places, maximum allowed is ${TIP_PRECISION}`,
         );
       }
 
@@ -628,5 +668,75 @@ export class TippingService {
       if (error instanceof BadRequestException) throw error;
       return empty;
     }
+  }
+
+  /**
+   * Acquire a processing lock for a tip to prevent concurrent verify/reconciliation races
+   * Issue #784: Preserve single-credit semantics
+   */
+  private async acquireProcessingLock(
+    txId: string,
+    processType: 'verify' | 'reconciliation',
+  ): Promise<{ success: boolean; existingTip?: Tip }> {
+    const lockId = crypto.randomBytes(16).toString('hex');
+    const now = new Date();
+
+    return await this.tipRepository.manager.transaction(async (manager) => {
+      const tipRepo = manager.getRepository(Tip);
+
+      // Check if tip already exists
+      const existingTip = await tipRepo.findOne({
+        where: { txId },
+      });
+
+      if (existingTip) {
+        // Tip already processed - return it for idempotent response
+        if (existingTip.verificationStatus === TipVerificationStatus.VERIFIED) {
+          return { success: false, existingTip };
+        }
+
+        // Check if there's an active lock
+        if (existingTip.processingLock) {
+          const lockAge = now.getTime() - (existingTip.lockedAt?.getTime() || 0);
+          
+          // If lock is stale (older than timeout), we can steal it
+          if (lockAge < TippingService.LOCK_TIMEOUT_MS) {
+            this.logger.warn(
+              `Tip ${txId} is already being processed by ${existingTip.lockedBy}`,
+            );
+            return { success: false, existingTip };
+          }
+
+          this.logger.warn(
+            `Stealing stale lock on tip ${txId} from ${existingTip.lockedBy}`,
+          );
+        }
+
+        // Acquire or update lock
+        await tipRepo.update(existingTip.id, {
+          processingLock: lockId,
+          lockedAt: now,
+          lockedBy: processType,
+          retryCount: existingTip.retryCount + 1,
+          lastCheckedAt: now,
+        });
+
+        return { success: true };
+      }
+
+      // Create new pending tip with lock
+      const newTip = tipRepo.create({
+        txId,
+        verificationStatus: TipVerificationStatus.PENDING,
+        processingLock: lockId,
+        lockedAt: now,
+        lockedBy: processType,
+        retryCount: 0,
+        lastCheckedAt: now,
+      });
+
+      await tipRepo.save(newTip);
+      return { success: true };
+    });
   }
 }
