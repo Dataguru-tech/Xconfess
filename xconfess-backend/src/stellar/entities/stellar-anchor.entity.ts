@@ -68,4 +68,11 @@ export class StellarAnchor {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  /**
+   * Whether this anchor can be retried (failed or expired state).
+   */
+  get allowRetry(): boolean {
+    return this.status === AnchorStatus.FAILED || this.status === AnchorStatus.EXPIRED;
+  }
 }

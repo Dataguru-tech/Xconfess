@@ -15,6 +15,10 @@ export class StellarConfigService implements OnModuleInit {
     maxFeeBudget: number;
     feeBackoffMs: number;
     maxFeeRetries: number;
+    rpcTimeoutMs: number;
+    rpcMaxRetries: number;
+    rpcRetryBaseDelayMs: number;
+    rpcRetryMaxDelayMs: number;
   };
   private server: StellarSDK.Horizon.Server;
 
@@ -50,6 +54,20 @@ export class StellarConfigService implements OnModuleInit {
       this.configService.get('STELLAR_MAX_FEE_RETRIES') ?? 3,
     );
 
+    // Load RPC timeout and retry policy
+    const rpcTimeoutMs = Number(
+      this.configService.get('STELLAR_RPC_TIMEOUT_MS') ?? 15000,
+    );
+    const rpcMaxRetries = Number(
+      this.configService.get('STELLAR_RPC_MAX_RETRIES') ?? 3,
+    );
+    const rpcRetryBaseDelayMs = Number(
+      this.configService.get('STELLAR_RPC_RETRY_BASE_DELAY_MS') ?? 1000,
+    );
+    const rpcRetryMaxDelayMs = Number(
+      this.configService.get('STELLAR_RPC_RETRY_MAX_DELAY_MS') ?? 10000,
+    );
+
     // Build config
     this.config = {
       network,
@@ -68,6 +86,10 @@ export class StellarConfigService implements OnModuleInit {
       maxFeeBudget,
       feeBackoffMs,
       maxFeeRetries,
+      rpcTimeoutMs,
+      rpcMaxRetries,
+      rpcRetryBaseDelayMs,
+      rpcRetryMaxDelayMs,
     };
 
     // Initialize Horizon server
@@ -77,6 +99,9 @@ export class StellarConfigService implements OnModuleInit {
     this.logger.log(`Horizon URL: ${this.config.horizonUrl}`);
     this.logger.log(
       `Fee budget: ${maxFeeBudget}, Backoff: ${feeBackoffMs}ms, Max retries: ${maxFeeRetries}`,
+    );
+    this.logger.log(
+      `RPC timeout: ${rpcTimeoutMs}ms, RPC retries: ${rpcMaxRetries}, Retry backoff: ${rpcRetryBaseDelayMs}-${rpcRetryMaxDelayMs}ms`,
     );
   }
 

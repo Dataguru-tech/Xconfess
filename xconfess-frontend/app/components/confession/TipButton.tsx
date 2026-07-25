@@ -17,6 +17,8 @@ interface TipButtonProps {
 }
 
 const MIN_TIP_AMOUNT = 0.1;
+const MAX_TIP_AMOUNT = 10_000;
+const TIP_PRECISION = 7;
 const TIP_STEP = 0.1;
 const TIP_UNIT = "XLM";
 
@@ -33,6 +35,13 @@ function getTipAmountValidationError(value: string): string | null {
   if (amount === 0) return "Tip amount must be greater than zero.";
   if (amount < 0) return "Tip amount cannot be negative.";
   if (amount < MIN_TIP_AMOUNT) return `Minimum tip is ${MIN_TIP_AMOUNT} ${TIP_UNIT}.`;
+  if (amount > MAX_TIP_AMOUNT) return `Maximum tip is ${MAX_TIP_AMOUNT} ${TIP_UNIT}.`;
+  // Validate precision
+  const amountStr = amount.toString();
+  const decimalPart = amountStr.includes(".") ? amountStr.split(".")[1] : "";
+  if (decimalPart.length > TIP_PRECISION) {
+    return `Tip amount cannot have more than ${TIP_PRECISION} decimal places.`;
+  }
   return null;
 }
 
