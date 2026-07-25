@@ -129,7 +129,6 @@ export class NotificationGateway
     const authenticatedUserId = String(client.data.userId);
     const requestedUserId = data?.userId ? String(data.userId) : null;
 
-    // If the client specifies a userId, it must match their own
     if (requestedUserId && requestedUserId !== authenticatedUserId) {
       this.wsLogger.logSubscriptionRejected({
         socketId: client.id,
@@ -138,7 +137,6 @@ export class NotificationGateway
         reason: `Ownership violation — authenticated as '${authenticatedUserId}', attempted to subscribe to '${requestedUserId}'`,
       });
       client.emit('subscription:rejected', {
-        channel: `${USER_ROOM_PREFIX}${requestedUserId}`,
         reason: 'You can only subscribe to your own notification channel',
         timestamp: new Date().toISOString(),
       });
@@ -147,7 +145,6 @@ export class NotificationGateway
 
     const userRoom = `${USER_ROOM_PREFIX}${authenticatedUserId}`;
 
-    // Ensure the socket is in its own room (idempotent — socket.io handles duplicates)
     client.join(userRoom);
 
     this.wsLogger.logSubscriptionGranted({

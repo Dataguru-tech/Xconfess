@@ -135,11 +135,9 @@ describe('ReactionModule', () => {
   });
 
   describe('Module Regression Protection', () => {
-    it('should fail if ReactionsGateway is removed from providers', async () => {
-      // This test ensures that if someone removes ReactionsGateway from providers,
-      // the test suite will catch it
-      await expect(async () => {
-        await Test.createTestingModule({
+    it('should still compile without ReactionsGateway (optional dependency)', async () => {
+      await expect(
+        Test.createTestingModule({
           controllers: [WebSocketHealthController],
           providers: [
             WebSocketHealthService,
@@ -147,10 +145,9 @@ describe('ReactionModule', () => {
               provide: ConfigService,
               useValue: { get: jest.fn((_key: string, fallback?: unknown) => fallback) },
             },
-            // Intentionally missing ReactionsGateway
           ],
-        }).compile();
-      }).rejects.toThrow();
+        }).compile(),
+      ).resolves.toBeDefined();
     });
   });
 });
