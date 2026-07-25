@@ -41,6 +41,8 @@
     "ci:frontend": "npm run frontend:lint && npm run frontend:test && npm run frontend:build",
     "ci:contract": "npm run contract:fmt:check && npm run contract:lint && npm run contract:test && npm run contract:build:release",
     "ci": "npm run ci:backend && npm run ci:frontend && npm run ci:contract",
+    "secret-scan": "./scripts/secret-scanning-preflight.sh",
+    "secret-scan:self-test": "./scripts/secret-scanning-preflight.sh --self-test",
     "audit:ci": "npx audit-ci --config audit-ci.json",
     "audit:report": "npm audit --json > audit-report.json 2>&1 || true"
   },
