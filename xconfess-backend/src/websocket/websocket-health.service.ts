@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ReactionsGateway } from '../reaction/reactions.gateway';
 
 export interface DependencyStatus {
   status: 'up' | 'degraded' | 'down';
@@ -17,11 +16,6 @@ export interface WebSocketHealthResult {
   websocket: {
     enabled: boolean;
     namespace: string;
-    connections?: {
-      total: number;
-      rooms: number;
-      connectionsPerIP: Record<string, number>;
-    };
   };
   dependencies?: {
     redis?: DependencyStatus;
@@ -33,10 +27,7 @@ export interface WebSocketHealthResult {
 export class WebSocketHealthService {
   private readonly logger = new Logger(WebSocketHealthService.name);
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly reactionsGateway?: ReactionsGateway,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   async checkHealth(): Promise<WebSocketHealthResult> {
     const baseResult: WebSocketHealthResult = {
@@ -48,15 +39,6 @@ export class WebSocketHealthService {
       },
       dependencies: {},
     };
-
-    if (this.reactionsGateway) {
-      const stats = this.reactionsGateway.getConnectionStats();
-      baseResult.websocket.connections = {
-        total: stats.totalConnections,
-        rooms: stats.activeRooms.length,
-        connectionsPerIP: stats.connectionsPerIP,
-      };
-    }
 
     const [redisStatus, notificationsStatus] = await Promise.all([
       this.checkRedisHealth(),

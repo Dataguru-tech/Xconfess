@@ -207,6 +207,7 @@ describe('Notification websocket auth regression coverage', () => {
 
     expect(client.join).not.toHaveBeenCalled();
     expect(client.emit).toHaveBeenCalledWith('subscription:rejected', {
+      channel: 'user:user-2',
       reason: 'You can only subscribe to your own notification channel',
       timestamp: expect.any(String),
     });

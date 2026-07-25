@@ -73,12 +73,6 @@ export class ReactionsGateway
           rateLimitMap.delete(socketId);
         }
       }
-
-      for (const [ip, count] of this.connectionsPerIP.entries()) {
-        if (count <= 0) {
-          this.connectionsPerIP.delete(ip);
-        }
-      }
     }, 300_000);
   }
 
@@ -175,10 +169,7 @@ export class ReactionsGateway
         channel: 'confession:<missing>',
         reason: 'Confession ID is required and must be a non-empty string',
       });
-      client.emit('subscription:rejected', {
-        reason: 'Confession ID is required',
-        timestamp: new Date().toISOString(),
-      });
+      client.emit('error', { message: 'Confession ID is required' });
       return;
     }
 
@@ -218,10 +209,7 @@ export class ReactionsGateway
         channel: 'confession:<missing>',
         reason: 'Confession ID is required for unsubscription',
       });
-      client.emit('subscription:rejected', {
-        reason: 'Confession ID is required',
-        timestamp: new Date().toISOString(),
-      });
+      client.emit('error', { message: 'Confession ID is required' });
       return;
     }
 

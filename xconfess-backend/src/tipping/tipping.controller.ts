@@ -7,7 +7,6 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
-  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
@@ -20,11 +19,9 @@ import {
 } from '@nestjs/swagger';
 import { TippingService, TipVerificationResult } from './tipping.service';
 import { VerifyTipDto } from './dto/verify-tip.dto';
-import { StellarFeatureGuard } from '../stellar/guards/stellar-feature.guard';
 
 @ApiTags('Tipping')
 @Controller('confessions/:id/tips')
-@UseGuards(StellarFeatureGuard)
 export class TippingController {
   constructor(private readonly tippingService: TippingService) {}
 

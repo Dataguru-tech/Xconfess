@@ -20,7 +20,6 @@ import { VerifyTransactionDto } from './dto/verify-transaction.dto';
 import { InvokeContractDto } from './dto/invoke-contract.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StellarInvokeContractGuard } from './guards/stellar-invoke-contract.guard';
-import { StellarFeatureGuard } from './guards/stellar-feature.guard';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActionType } from '../audit-log/audit-log.entity';
 import { AuthenticatedRequest } from '../auth/interfaces/jwt-payload.interface';
@@ -42,6 +41,18 @@ export class StellarController {
     private auditLogService: AuditLogService,
   ) {}
 
+  @Get('anchors')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get paginated anchored confessions for the current user' })
+  @ApiResponse({ status: 200, description: 'Paginated list of anchored confessions' })
+  async getUserAnchors(
+    @Req() req: AuthenticatedRequest,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.stellarService.getUserAnchors(req.user.id, page || 1, limit || 10);
+  }
+
   @Get('config')
   @ApiOperation({
     summary: 'Get Stellar network and contract deployment configuration',
@@ -58,20 +69,7 @@ export class StellarController {
     return this.stellarService.getNetworkConfig();
   }
 
-  @Get('anchors')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard)
-  @ApiOperation({ summary: 'Get paginated anchored confessions for the current user' })
-  @ApiResponse({ status: 200, description: 'Paginated list of anchored confessions' })
-  async getUserAnchors(
-    @Req() req: AuthenticatedRequest,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.stellarService.getUserAnchors(req.user.id, page || 1, limit || 10);
-  }
-
   @Get('anchor/verify/:confessionHash')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard)
   @ApiOperation({ summary: 'Verify a confession hash on the anchor contract' })
   @ApiParam({
     name: 'confessionHash',
@@ -113,7 +111,6 @@ export class StellarController {
   }
 
   @Get('balance/:address')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard)
   @ApiOperation({ summary: 'Get account balance' })
   @ApiResponse({ status: 200, description: 'Account balance' })
   async getBalance(@Param('address') address: string) {
@@ -121,7 +118,6 @@ export class StellarController {
   }
 
   @Post('verify')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard)
   @ApiOperation({ summary: 'Verify transaction on-chain' })
   @ApiResponse({ status: 200, description: 'Transaction verification result' })
   async verifyTransaction(@Body() dto: VerifyTransactionDto, @Req() req: any) {
@@ -131,7 +127,6 @@ export class StellarController {
   }
 
   @Get('account-exists/:address')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard)
   @ApiOperation({ summary: 'Check if account exists' })
   async accountExists(@Param('address') address: string) {
     const exists = await this.stellarService.accountExists(address);
@@ -139,10 +134,10 @@ export class StellarController {
   }
 
   @Post('invoke-contract')
-  @UseGuards(JwtAuthGuard, StellarFeatureGuard, StellarInvokeContractGuard)
   @ApiOperation({
     summary: 'Invoke allowlisted Soroban operation (server-signed, admin)',
   })
+  @UseGuards(JwtAuthGuard, StellarInvokeContractGuard)
   async invokeContract(
     @Body() dto: InvokeContractDto,
     @Req() req: AuthenticatedRequest,
