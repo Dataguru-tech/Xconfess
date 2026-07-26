@@ -41,6 +41,7 @@ import { maskUserId } from 'src/utils/mask-user-id';
 import { EncryptionService } from 'src/encryption/encryption.service';
 import { ConfessionResponseDto } from './dto/confession-response.dto';
 import { StellarService } from '../stellar/stellar.service';
+import { ContractService } from '../stellar/contract.service';
 import { AnchorConfessionDto } from '../stellar/dto/anchor-confession.dto';
 import { CacheService, CACHE_TTL } from '../cache/cache.service';
 import { TagService } from './tag.service';
@@ -63,6 +64,7 @@ export class ConfessionService {
     private readonly logger: AppLogger,
     private encryptionService: EncryptionService,
     private readonly stellarService: StellarService,
+    private readonly contractService: ContractService,
     private readonly cacheService: CacheService,
     private readonly tagService: TagService,
     private readonly configService: ConfigService,
@@ -1127,9 +1129,27 @@ export class ConfessionService {
       };
     }
 
-    const isVerified = await this.stellarService.verifyTransaction(
+    const txSucceeded = await this.stellarService.verifyTransaction(
       confession.stellarTxHash,
     );
+
+    // A successful transaction alone does not prove *this* confession was
+    // anchored — the reported tx hash could belong to an unrelated or stale
+    // submission. Confirm the contract's on-chain state actually holds the
+    // locally-computed hash before trusting the anchor.
+    const payloadMatches =
+      txSucceeded &&
+      !!confession.stellarHash &&
+      (await this.contractService.verifyConfession(confession.stellarHash)) !==
+        null;
+
+    if (txSucceeded && !payloadMatches) {
+      this.logger.warn(
+        `Anchor hash mismatch for confession ${confession.id}: transaction ${confession.stellarTxHash} succeeded on-chain but does not anchor the expected confession hash`,
+      );
+    }
+
+    const isVerified = payloadMatches;
 
     // Pending anchor confirmed on-chain: promote to fully anchored
     if (!confession.isAnchored && isVerified) {

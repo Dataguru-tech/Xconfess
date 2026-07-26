@@ -8,6 +8,7 @@ import {
 } from './interfaces/stellar-config.interface';
 import { handleStellarError } from './utils/stellar-error.handler';
 import { encodeContractArgs, ContractArg } from './utils/parameter.encoder';
+import { redactSecretStrings } from '../utils/redact-secrets';
 import { InvokeContractDto } from './dto/invoke-contract.dto';
 import { getStellarInvocationPolicy } from './stellar-invocation-policy';
 
@@ -84,7 +85,11 @@ export class ContractService {
         result: decodedResult,
       };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      // Redacted defensively: this can be the signing path's error, which is
+      // derived from the server secret key and must never log it verbatim.
+      const message = redactSecretStrings(
+        error instanceof Error ? error.message : String(error),
+      );
       this.logger.error('Contract invocation failed: ' + String(message));
       throw handleStellarError(error);
     }

@@ -10,6 +10,7 @@ import { AppLogger } from '../logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { EncryptionService } from '../encryption/encryption.service';
 import { StellarService } from '../stellar/stellar.service';
+import { ContractService } from '../stellar/contract.service';
 import { CacheService } from '../cache/cache.service';
 import { TagService } from './tag.service';
 import { SortOrder } from './dto/get-confessions.dto';
@@ -76,6 +77,7 @@ function buildProviders(qb: any, cacheService: any) {
       provide: StellarService,
       useValue: { processAnchorData: jest.fn(), getExplorerUrl: jest.fn(), verifyTransaction: jest.fn() },
     },
+    { provide: ContractService, useValue: { verifyConfession: jest.fn() } },
     { provide: CacheService, useValue: cacheService },
     { provide: TagService, useValue: { validateTags: jest.fn() } },
     anomalyDetectionProvider,
@@ -264,6 +266,7 @@ function buildSearchProviders(repoValue: any) {
       provide: StellarService,
       useValue: { processAnchorData: jest.fn(), getExplorerUrl: jest.fn(), verifyTransaction: jest.fn() },
     },
+    { provide: ContractService, useValue: { verifyConfession: jest.fn() } },
     {
       provide: CacheService,
       useValue: {

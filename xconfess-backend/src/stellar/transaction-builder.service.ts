@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as StellarSDK from '@stellar/stellar-sdk';
 import { StellarConfigService } from './stellar-config.service';
 import { ITransactionOptions } from './interfaces/stellar-config.interface';
+import { redactSecretStrings } from '../utils/redact-secrets';
 
 @Injectable()
 export class TransactionBuilderService {
@@ -111,7 +112,11 @@ export class TransactionBuilderService {
       transaction.sign(keypair);
       return transaction;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      // Redacted defensively: the underlying error is derived from the secret
+      // key itself and must never be assumed safe to log verbatim.
+      const message = redactSecretStrings(
+        error instanceof Error ? error.message : String(error),
+      );
       this.logger.error(`Failed to sign transaction: ${message}`);
       throw new Error(`Transaction signing failed: ${message}`);
     }

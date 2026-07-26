@@ -165,6 +165,32 @@ export class StellarReconciliationWorker {
         );
         if (txValid) {
           if (anchor.status === AnchorStatus.OBSERVED) {
+            // A successful transaction alone does not prove *this* confession
+            // was anchored — the recorded tx hash could belong to an
+            // unrelated or stale submission. Confirm the contract's on-chain
+            // state actually holds the locally-computed hash before
+            // graduating to the final ANCHORED status.
+            const payloadMatches =
+              !!confession.stellarHash &&
+              (await this.contractService.verifyConfession(
+                confession.stellarHash,
+              )) !== null;
+
+            if (!payloadMatches) {
+              anchor.lastError =
+                'Anchor hash mismatch: on-chain transaction does not anchor the expected confession hash';
+              await this.anchorRepository.save(anchor);
+
+              this.logger.warn({
+                event: 'stellar_anchor_hash_mismatch',
+                requestId,
+                confessionId: anchor.confessionId,
+                txHash: anchor.stellarTxHash,
+                message: `Transaction ${anchor.stellarTxHash} succeeded on-chain but does not anchor the expected confession hash for confession ${anchor.confessionId}`,
+              });
+              return 'failed';
+            }
+
             // Second verification confirmed: graduate from OBSERVED (provisional) -> ANCHORED (final)
             anchor.status = AnchorStatus.ANCHORED;
             anchor.observedAt = null;

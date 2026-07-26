@@ -13,6 +13,7 @@ import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AnonymousConfession } from '../confession/entities/confession.entity';
+import { redactSecretStrings } from '../utils/redact-secrets';
 
 export interface AnchorData {
   stellarTxHash: string;
@@ -227,7 +228,11 @@ export class StellarService {
         success: result.successful,
       };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      // Redacted defensively: this path constructs a keypair directly from
+      // the server secret, so any thrown error is not guaranteed secret-free.
+      const message = redactSecretStrings(
+        error instanceof Error ? error.message : String(error),
+      );
       this.logger.error(`Payment failed: ${message}`);
       throw error;
     }
