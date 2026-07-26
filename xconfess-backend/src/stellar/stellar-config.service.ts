@@ -6,7 +6,10 @@ import {
   IStellarConfig,
   StellarNetwork,
 } from './interfaces/stellar-config.interface';
-import { DeploymentMetadataService } from './services/deployment-metadata.service';
+import {
+  DeploymentMetadata,
+  DeploymentMetadataService,
+} from './services/deployment-metadata.service';
 
 @Injectable()
 export class StellarConfigService implements OnModuleInit {
@@ -21,6 +24,16 @@ export class StellarConfigService implements OnModuleInit {
     rpcRetryMaxDelayMs: number;
   };
   private server: StellarSDK.Horizon.Server;
+
+  /** Maps a configured contract field to its deployment metadata contract name. */
+  private readonly contractMetadataKeys: Record<
+    keyof IStellarConfig['contractIds'],
+    string
+  > = {
+    confessionAnchor: 'confession-anchor',
+    reputationBadges: 'reputation-badges',
+    tippingSystem: 'anonymous-tipping',
+  };
 
   constructor(
     private configService: ConfigService,
@@ -114,17 +127,23 @@ export class StellarConfigService implements OnModuleInit {
     }
 
     const fallbackIds = this.deploymentMetadataService.getAllContractIds();
+    const explicitContractIds = { ...this.config.contractIds };
     this.config.contractIds = {
       confessionAnchor:
-        this.config.contractIds.confessionAnchor || fallbackIds['confession-anchor'],
+        explicitContractIds.confessionAnchor || fallbackIds['confession-anchor'],
       reputationBadges:
-        this.config.contractIds.reputationBadges || fallbackIds['reputation-badges'],
+        explicitContractIds.reputationBadges || fallbackIds['reputation-badges'],
       tippingSystem:
-        this.config.contractIds.tippingSystem || fallbackIds['anonymous-tipping'],
+        explicitContractIds.tippingSystem || fallbackIds['anonymous-tipping'],
     };
 
     const featuresEnabled =
       this.configService.get<string>('STELLAR_FEATURES_ENABLED') === 'true';
+
+    if (featuresEnabled && metadata) {
+      this.validateContractIdsAgainstNetwork(metadata, explicitContractIds);
+    }
+
     const missingContractIds = Object.entries(this.config.contractIds)
       .filter(([, value]) => !value)
       .map(([key]) => key);
@@ -135,6 +154,39 @@ export class StellarConfigService implements OnModuleInit {
           ', ',
         )}. Provide contract IDs through environment variables or deployment metadata.
         `,
+      );
+    }
+  }
+
+  /**
+   * Ensure deployment metadata belongs to the configured network, and that any
+   * explicitly-configured (env var) contract ID agrees with that network's
+   * deployment metadata. Prevents e.g. a testnet config accidentally loading
+   * mainnet deployment metadata, or an env var left over from another network.
+   */
+  private validateContractIdsAgainstNetwork(
+    metadata: DeploymentMetadata,
+    explicitContractIds: IStellarConfig['contractIds'],
+  ): void {
+    if (metadata.network !== this.config.network) {
+      throw new Error(
+        `Deployment metadata network mismatch: configured Stellar network is "${this.config.network}" but the loaded deployment metadata was generated for "${metadata.network}". Refusing to boot with mismatched network deployment metadata.`,
+      );
+    }
+
+    const mismatches = (
+      Object.keys(explicitContractIds) as Array<keyof IStellarConfig['contractIds']>
+    ).filter((field) => {
+      const explicitId = explicitContractIds[field];
+      const metadataId = metadata.contracts[this.contractMetadataKeys[field]]?.contract_id;
+      return !!explicitId && !!metadataId && explicitId !== metadataId;
+    });
+
+    if (mismatches.length > 0) {
+      throw new Error(
+        `Stellar contract ID mismatch for network "${this.config.network}": ${mismatches.join(
+          ', ',
+        )} do not match the ID recorded in deployment metadata. Verify contract ID environment variables are configured for the correct network.`,
       );
     }
   }
