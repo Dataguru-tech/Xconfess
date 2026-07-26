@@ -24,6 +24,7 @@ impl Lcg {
         }
     }
 
+    #[allow(dead_code)]
     fn next_i128_nonzero(&mut self) -> i128 {
         // Produce a nonzero signed value using two LCG words.
         let hi = self.next_u32() as i128;
@@ -125,7 +126,7 @@ pub fn generate_tip_actions(seed: u64, steps: usize, pool: u32) -> Vec<TipAction
         let recipient_idx = rng.bounded(pool);
 
         let action = match kind {
-            0 | 1 | 2 => {
+            0..=2 => {
                 // Valid: amount in 1..=10_000, meta_len in 0..=128
                 let raw = rng.next_u32();
                 let amount = ((raw % 10_000) as i128) + 1;
@@ -164,6 +165,7 @@ pub fn generate_tip_actions(seed: u64, steps: usize, pool: u32) -> Vec<TipAction
 /// Invariant helpers for `TipAction` sequences.
 impl TipAction {
     /// Returns true when the contract is expected to succeed.
+    #[allow(dead_code)]
     pub fn is_valid(&self) -> bool {
         matches!(self, TipAction::Valid { .. })
     }

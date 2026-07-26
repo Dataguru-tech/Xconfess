@@ -15,7 +15,7 @@ use model::replay::format_action_trace;
 /// Accepting criteria: Resolved confessions reject React, Report, and Escalate actions.
 fn check_resolved_terminal(
     reference: &ModelState,
-    observed: &ObservedMachine,
+    _observed: &ObservedMachine,
 ) -> Result<(), String> {
     for (_, conf) in reference.confessions.iter() {
         if conf.resolved {
