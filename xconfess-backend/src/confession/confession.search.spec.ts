@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { AnonymousUserService } from '../user/anonymous-user.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { StellarService } from '../stellar/stellar.service';
+import { ContractService } from '../stellar/contract.service';
 import { CacheService } from '../cache/cache.service';
 import { TagService } from './tag.service';
 import { AnomalyDetectionService } from '../anomaly/anomaly-detection.service';
@@ -94,6 +95,7 @@ describe('ConfessionService - Search Functionality', () => {
             verifyTransaction: jest.fn(),
           },
         },
+        { provide: ContractService, useValue: { verifyConfession: jest.fn() } },
         {
           provide: CacheService,
           useValue: {

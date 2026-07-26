@@ -41,7 +41,10 @@ describe('StellarReconciliationWorker', () => {
 
     contractService = {
       anchorConfession: jest.fn(),
+      verifyConfession: jest.fn(),
     };
+
+    stellarService.verifyTransaction = jest.fn();
 
     auditService = {
       log: jest.fn(),
@@ -218,5 +221,72 @@ describe('StellarReconciliationWorker', () => {
         }),
       }),
     );
+  });
+
+  describe('anchor payload verification (#1474)', () => {
+    it('graduates an OBSERVED anchor to ANCHORED when the on-chain hash matches confession state', async () => {
+      const anchor = {
+        id: 'a6',
+        status: AnchorStatus.OBSERVED,
+        retryCount: 0,
+        lastRetryAt: new Date(),
+        createdAt: new Date(),
+        confessionId: 'c6',
+        stellarTxHash: 'txhash789',
+      } as StellarAnchor;
+
+      anchorRepository.find.mockResolvedValue([anchor]);
+      const confession = {
+        id: 'c6',
+        message: 'enc',
+        stellarHash: 'expectedHash',
+        isAnchored: false,
+      } as unknown as AnonymousConfession;
+      confessionRepository.findOne.mockResolvedValue(confession);
+
+      stellarService.verifyTransaction.mockResolvedValue(true);
+      contractService.verifyConfession.mockResolvedValue(1_700_000_000_000);
+
+      await worker.reconcilePendingAnchors();
+
+      expect(contractService.verifyConfession).toHaveBeenCalledWith('expectedHash');
+      expect(anchor.status).toBe(AnchorStatus.ANCHORED);
+      expect(confessionRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ isAnchored: true }),
+      );
+    });
+
+    it('rejects graduation to ANCHORED when the on-chain hash does not match confession state', async () => {
+      const anchor = {
+        id: 'a7',
+        status: AnchorStatus.OBSERVED,
+        retryCount: 0,
+        lastRetryAt: new Date(),
+        createdAt: new Date(),
+        confessionId: 'c7',
+        stellarTxHash: 'txhash999',
+      } as StellarAnchor;
+
+      anchorRepository.find.mockResolvedValue([anchor]);
+      const confession = {
+        id: 'c7',
+        message: 'enc',
+        stellarHash: 'expectedHash',
+        isAnchored: false,
+      } as unknown as AnonymousConfession;
+      confessionRepository.findOne.mockResolvedValue(confession);
+
+      stellarService.verifyTransaction.mockResolvedValue(true);
+      // The transaction succeeded on Horizon, but the contract never recorded
+      // this confession's hash — i.e. the tx hash points at unrelated data.
+      contractService.verifyConfession.mockResolvedValue(null);
+
+      await worker.reconcilePendingAnchors();
+
+      expect(anchor.status).toBe(AnchorStatus.OBSERVED);
+      expect(anchor.lastError).toMatch(/hash mismatch/i);
+      expect(confession.isAnchored).toBe(false);
+      expect(confessionRepository.save).not.toHaveBeenCalled();
+    });
   });
 });
