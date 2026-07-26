@@ -336,7 +336,11 @@ fn registry_confessions_and_count_survive_upgrade() {
 
     assert_eq!(post.get_confession(&id1).id, id1);
     assert_eq!(post.get_confession(&id2).id, id2);
-    assert_eq!(post.get_total_count(), 2, "total count must survive upgrade");
+    assert_eq!(
+        post.get_total_count(),
+        2,
+        "total count must survive upgrade"
+    );
     assert_eq!(
         post.get_author_confessions(&author).len(),
         2,

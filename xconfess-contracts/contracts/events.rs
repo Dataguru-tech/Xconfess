@@ -218,13 +218,7 @@ pub const PUBLIC_EVENT_SCHEMA_FIXTURES: &[EventSchemaFixture] = &[
         topic: "gov_inv",
         data_format: "single-value",
         event_version: EVENT_VERSION_V1,
-        field_order: &[
-            "nonce",
-            "timestamp",
-            "operation",
-            "reason",
-            "attempted_by",
-        ],
+        field_order: &["nonce", "timestamp", "operation", "reason", "attempted_by"],
     },
     EventSchemaFixture {
         fixture_version: EVENT_FIXTURE_VERSION_V1,
