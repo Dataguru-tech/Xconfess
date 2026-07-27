@@ -15,6 +15,7 @@ describe('AuditLogService', () => {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     offset: jest.fn().mockReturnThis(),
     getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
@@ -197,6 +198,36 @@ describe('AuditLogService', () => {
           lifecycleAction: 'downloaded',
           occurredAt: '2026-03-24T00:00:00.000Z',
           source: 'signed_link',
+        }),
+      }),
+    );
+  });
+
+  it('records failed export download attempts with the dedicated audit action', async () => {
+    mockRepository.create.mockReturnValue({} as AuditLog);
+    mockRepository.save.mockResolvedValue({} as AuditLog);
+
+    await service.logExportLifecycleEvent({
+      action: 'download_failed',
+      actorType: 'system',
+      actorId: 'download-token-validator',
+      requestId: 'export-req-1',
+      exportId: 'export-req-1',
+      metadata: {
+        reason: 'invalid_or_used',
+      },
+    });
+
+    expect(mockRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AuditActionType.EXPORT_DOWNLOAD_FAILED,
+        metadata: expect.objectContaining({
+          entityType: 'data_export',
+          requestId: 'export-req-1',
+          actorType: 'system',
+          actorId: 'download-token-validator',
+          lifecycleAction: 'download_failed',
+          reason: 'invalid_or_used',
         }),
       }),
     );

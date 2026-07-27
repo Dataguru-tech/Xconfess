@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog, AuditActionType } from './audit-log.entity';
@@ -56,6 +56,7 @@ export type ExportLifecycleAction =
   | 'generation_completed'
   | 'link_refreshed'
   | 'downloaded'
+  | 'download_failed'
   | 'token_expired'
   | 'export_expired';
 
@@ -435,6 +436,41 @@ export class AuditLogService {
   }
 
   /**
+   * Log a single summary entry for an export-retention cleanup run
+   * (dry-run or real), mirroring logNotificationDlqCleanup.
+   */
+  async logExportRetentionCleanup(
+    metadata: {
+      dryRun: boolean;
+      retentionDays: number;
+      cutoff: string;
+      summary: {
+        eligibleCount: number;
+        expiredCount: number;
+        chunkCount: number;
+        statusCounts: Record<string, number>;
+        requestIds: string[];
+        omittedRequestIds: number;
+      };
+      cleanedAt?: string;
+    },
+    context?: AuditLogContext,
+  ): Promise<void> {
+    await this.log({
+      actionType: AuditActionType.EXPORT_RETENTION_CLEANUP,
+      metadata: {
+        entityType: 'data_export_retention',
+        ...metadata,
+        cleanedAt: metadata.cleanedAt || new Date().toISOString(),
+      },
+      context: {
+        ...context,
+        actor: this.createActor('system', 'retention-cleanup-scheduler'),
+      },
+    });
+  }
+
+  /**
    * Log an admin-initiated CSV export (frontend-driven)
    */
   async logAdminCsvExport(
@@ -474,6 +510,8 @@ export class AuditLogService {
         return AuditActionType.EXPORT_LINK_REFRESHED;
       case 'downloaded':
         return AuditActionType.EXPORT_DOWNLOADED;
+      case 'download_failed':
+        return AuditActionType.EXPORT_DOWNLOAD_FAILED;
       case 'token_expired':
         return AuditActionType.EXPORT_TOKEN_EXPIRED;
       case 'export_expired':
@@ -784,6 +822,7 @@ export class AuditLogService {
    */
   async findAll(options: {
     userId?: string | number;
+    actor?: string;
     actorId?: string;
     actorType?: string;
     actionType?: AuditActionType;
@@ -793,6 +832,9 @@ export class AuditLogService {
     exportId?: string;
     templateKey?: string;
     templateVersion?: string;
+    search?: string;
+    sortBy?: 'createdAt' | 'actor' | 'action' | 'target';
+    sortOrder?: 'ASC' | 'DESC';
     startDate?: Date;
     endDate?: Date;
     limit?: number;
@@ -816,6 +858,29 @@ export class AuditLogService {
         query.andWhere('audit_log.admin_id = :userId', {
           userId: normalizedUserId,
         });
+      }
+
+      if (options.actor) {
+        const actor = options.actor.trim();
+        if (actor) {
+          const normalizedActorId = this.toNullableUserId(actor);
+          query.andWhere(
+            `(${[
+              'admin.username ILIKE :actorLike',
+              "audit_log.metadata->>'actorLabel' ILIKE :actorLike",
+              "audit_log.metadata->>'actorId' ILIKE :actorLike",
+              normalizedActorId === null
+                ? null
+                : 'audit_log.admin_id = :actorId',
+            ]
+              .filter(Boolean)
+              .join(' OR ')})`,
+            {
+              actorLike: `%${actor}%`,
+              actorId: normalizedActorId,
+            },
+          );
+        }
       }
 
       if (options.actorId) {
@@ -886,6 +951,24 @@ export class AuditLogService {
         );
       }
 
+      if (options.search) {
+        const search = options.search.trim();
+        if (search) {
+          query.andWhere(
+            `(${[
+              'audit_log.action::text ILIKE :search',
+              'audit_log.entity_type ILIKE :search',
+              'audit_log.entity_id ILIKE :search',
+              'audit_log.notes ILIKE :search',
+              'audit_log.request_id ILIKE :search',
+              'admin.username ILIKE :search',
+              'audit_log.metadata::text ILIKE :search',
+            ].join(' OR ')})`,
+            { search: `%${search}%` },
+          );
+        }
+      }
+
       if (options.startDate) {
         query.andWhere('audit_log.createdAt >= :startDate', {
           startDate: options.startDate,
@@ -898,7 +981,22 @@ export class AuditLogService {
         });
       }
 
-      query.orderBy('audit_log.createdAt', 'DESC');
+      const sortOrder = options.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+      const sortColumn =
+        options.sortBy === 'actor'
+          ? 'admin.username'
+          : options.sortBy === 'action'
+            ? 'audit_log.action'
+            : options.sortBy === 'target'
+              ? 'audit_log.entity_type'
+              : 'audit_log.createdAt';
+      query.orderBy(sortColumn, sortOrder);
+      if (options.sortBy === 'target') {
+        query.addOrderBy('audit_log.entity_id', sortOrder);
+      }
+      if (options.sortBy && options.sortBy !== 'createdAt') {
+        query.addOrderBy('audit_log.createdAt', 'DESC');
+      }
       query.limit(options.limit || 100);
       query.offset(options.offset || 0);
 

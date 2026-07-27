@@ -22,10 +22,12 @@ import { Card, CardContent, CardHeader } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { ReactionButton } from "@/app/components/confession/ReactionButtons";
 import { AnchorButton } from "@/app/components/confession/AnchorButton";
+import { TipButton } from "@/app/components/confession/TipButton";
 import { ShareButton } from "@/app/components/confession/ShareButton";
 import { CommentSection } from "@/app/components/confession/CommentSection";
 import { RelatedConfessions } from "@/app/components/confession/RelatedConfessions";
 import { formatDate } from "@/app/lib/utils/formatDate";
+import { sanitizeMarkdown } from "@/app/lib/utils/markdown";
 import { queryKeys } from "@/app/lib/api/queryKeys";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { getConfessionById } from "@/app/lib/api/confessions";
@@ -42,6 +44,7 @@ interface ConfessionDetailClientProps {
     isAnchored?: boolean;
     stellarTxHash?: string | null;
     anchorStatus?: "confirmed" | "pending" | "not_anchored";
+    author?: { id: string; username?: string; avatar?: string | null; stellarAddress?: string };
   } | null; // Changed to allow null for explicit 404 tracking
   confessionId: string;
 }
@@ -313,7 +316,7 @@ export function ConfessionDetailClient({
           <CardContent className="pt-0">
             <div className="prose prose-zinc max-w-none text-zinc-900 dark:prose-invert dark:text-white prose-p:text-lg prose-p:leading-relaxed prose-a:break-all">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {confession.content}
+                {sanitizeMarkdown(confession.content)}
               </ReactMarkdown>
             </div>
 
@@ -329,6 +332,10 @@ export function ConfessionDetailClient({
                   type="love"
                   count={confession.reactions.love}
                   confessionId={confessionId}
+                />
+                <TipButton
+                  confessionId={confessionId}
+                  recipientAddress={confession.author?.stellarAddress}
                 />
                 <AnchorButton
                   confessionId={confessionId}
