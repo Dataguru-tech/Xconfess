@@ -1,15 +1,34 @@
 #![no_std]
 
-pub mod errors;
-
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, token::TokenClient,
     Address, Env, MuxedAddress, String as SorobanString,
 };
 
 /// Backend-facing stable error codes for tipping contract
-/// Re-exported from errors.rs for backward compatibility
-pub use errors::{codes, ErrorClassification};
+/// These codes are exposed via Error::code() and must remain stable for consumer compatibility
+pub mod codes {
+    pub const INVALID_TIP_AMOUNT: u32 = 6001;
+    pub const METADATA_TOO_LONG: u32 = 6002;
+    pub const TOTAL_OVERFLOW: u32 = 6003;
+    pub const NONCE_OVERFLOW: u32 = 6004;
+    pub const UNAUTHORIZED: u32 = 6005;
+    pub const CONTRACT_PAUSED: u32 = 6006;
+    pub const RATE_LIMITED: u32 = 6007;
+    pub const INVALID_RATE_LIMIT_CONFIG: u32 = 6008;
+    pub const TOKEN_NOT_CONFIGURED: u32 = 6009;
+    pub const SETTLEMENT_REPLAY: u32 = 6010;
+    pub const SETTLEMENT_NOT_FOUND: u32 = 6011;
+    pub const RECIPIENT_MISMATCH: u32 = 6012;
+}
+
+/// Error classification for backend retry strategy
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ErrorClassification {
+    Terminal,  // Invalid input, auth failure — do not retry
+    Retryable, // Transient (pause, rate limit) — may retry with backoff
+    Unknown,   // Treat as terminal, log for investigation
+}
 
 const EVENT_VERSION_V1: u32 = 1;
 

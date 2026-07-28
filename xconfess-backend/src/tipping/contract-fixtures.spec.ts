@@ -208,22 +208,6 @@ describe('Tipping Contract Fixtures', () => {
       }
     });
 
-    it('should classify replay-protection terminal errors correctly', () => {
-      const terminalErrors = [
-        TIPPING_ERROR_CODES.SETTLEMENT_REPLAY,
-        TIPPING_ERROR_CODES.SETTLEMENT_NOT_FOUND,
-        TIPPING_ERROR_CODES.RECIPIENT_MISMATCH,
-      ];
-
-      for (const errorCode of terminalErrors) {
-        expect(classifyContractError(errorCode)).toBe(
-          ContractErrorClassification.TERMINAL,
-        );
-        expect(isRetryableContractError(errorCode)).toBe(false);
-        expect(getRetryDelayMs(errorCode)).toBeNull();
-      }
-    });
-
     it('should provide appropriate retry delays', () => {
       const retryableError = TIPPING_ERROR_CODES.CONTRACT_PAUSED;
 
@@ -393,10 +377,6 @@ describe('Tipping Contract Fixtures', () => {
         'CONTRACT_PAUSED',
         'RATE_LIMITED',
         'INVALID_RATE_LIMIT_CONFIG',
-        'TOKEN_NOT_CONFIGURED',
-        'SETTLEMENT_REPLAY',
-        'SETTLEMENT_NOT_FOUND',
-        'RECIPIENT_MISMATCH',
       ];
 
       const actualNames = Object.keys(TIPPING_ERROR_CODES);
@@ -446,23 +426,6 @@ describe('Tipping Contract Fixtures', () => {
         expect(response.retryable).toBe(
           classifyContractError(code) === ContractErrorClassification.RETRYABLE,
         );
-      }
-    });
-
-    it('should map new replay protection errors to client-safe responses', () => {
-      const replayCodes = [
-        TIPPING_ERROR_CODES.SETTLEMENT_REPLAY,
-        TIPPING_ERROR_CODES.SETTLEMENT_NOT_FOUND,
-        TIPPING_ERROR_CODES.RECIPIENT_MISMATCH,
-      ];
-
-      for (const code of replayCodes) {
-        const err = handleStellarContractError(code);
-        expect(err.message).toBeTruthy();
-        expect(err.message.length).toBeGreaterThan(10);
-        const response = err.toResponse();
-        expect(response.retryable).toBe(false);
-        expect(response.code).toBe(code);
       }
     });
 

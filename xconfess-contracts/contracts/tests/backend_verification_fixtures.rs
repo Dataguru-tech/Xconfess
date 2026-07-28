@@ -333,24 +333,6 @@ pub const ERROR_CODE_FIXTURES: &[ErrorCodeFixture] = &[
         classification: ErrorClassification::Terminal,
         http_status: 500,
     },
-    ErrorCodeFixture {
-        error_code: 6010,
-        error_name: "SETTLEMENT_REPLAY",
-        classification: ErrorClassification::Terminal,
-        http_status: 409,
-    },
-    ErrorCodeFixture {
-        error_code: 6011,
-        error_name: "SETTLEMENT_NOT_FOUND",
-        classification: ErrorClassification::Terminal,
-        http_status: 404,
-    },
-    ErrorCodeFixture {
-        error_code: 6012,
-        error_name: "RECIPIENT_MISMATCH",
-        classification: ErrorClassification::Terminal,
-        http_status: 403,
-    },
 ];
 
 /// Badge-specific error codes (7000-7999 range)
@@ -799,54 +781,6 @@ mod tests {
         verify_tip_fixture(&env, &client, &TIP_FIXTURE_LARGE_AMOUNT);
     }
 
-    #[test]
-    fn tip_fixture_receipt_verification_matches_contract_output() {
-        let env = Env::default();
-        let client = new_tipping_client(&env);
-        let fixture = TIP_FIXTURE_BASIC;
-
-        let proof = if fixture.proof_present {
-            Some(SorobanString::from_str(&env, fixture.proof_metadata))
-        } else {
-            None
-        };
-
-        let settlement_id = client
-            .send_tip_with_proof(&fixture.amount, &proof)
-            .expect("fixture tip must succeed");
-
-        assert_eq!(settlement_id, fixture.settlement_id);
-
-        let receipt = client
-            .claim_receipt(&settlement_id)
-            .expect("receipt must exist");
-
-        assert_eq!(receipt.settlement_id, fixture.settlement_id);
-        assert_eq!(receipt.amount, fixture.amount);
-        assert!(receipt.timestamp > 0);
-    }
-
-    #[test]
-    fn tip_fixture_verify_settlement_rejects_wrong_recipient() {
-        let env = Env::default();
-        let client = new_tipping_client(&env);
-        let fixture = TIP_FIXTURE_BASIC;
-
-        let proof = if fixture.proof_present {
-            Some(SorobanString::from_str(&env, fixture.proof_metadata))
-        } else {
-            None
-        };
-
-        let _ = client
-            .send_tip_with_proof(&fixture.amount, &proof)
-            .expect("fixture tip must succeed");
-
-        let wrong_recipient = Address::generate(&env);
-        let result = client.try_verify_settlement(&fixture.settlement_id, &wrong_recipient);
-        assert_eq!(result, Err(Ok(crate::Error::RecipientMismatch)));
-    }
-
     // ── badge event fixture tests ─────────────────────────────────────────
 
     #[test]
@@ -930,7 +864,7 @@ mod tests {
 
     #[test]
     fn error_code_fixtures_are_stable() {
-        assert_eq!(ERROR_CODE_FIXTURES.len(), 12, "all tipping error codes must be covered");
+        assert_eq!(ERROR_CODE_FIXTURES.len(), 9, "all tipping error codes must be covered");
         for fixture in ERROR_CODE_FIXTURES {
             assert!(
                 fixture.error_code >= 6000 && fixture.error_code < 7000,

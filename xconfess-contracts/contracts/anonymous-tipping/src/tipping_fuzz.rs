@@ -37,10 +37,11 @@ mod fuzz {
 
         let sid = c.send_tip(&sender, &recipient, &100i128);
 
-    let receipt = c.claim_receipt(&sid);
-    assert_eq!(receipt.recipient, recipient);
-    assert_eq!(receipt.amount, 100i128);
-    assert_eq!(receipt.settlement_id, sid);
+        let receipt = c.claim_receipt(&sid);
+        assert_eq!(receipt.recipient, recipient);
+        assert_eq!(receipt.amount, 100i128);
+        assert_eq!(receipt.settlement_id, sid);
+        assert!(receipt.timestamp > 0);
     }
 
     /// Non-existent settlement_id returns SettlementNotFound

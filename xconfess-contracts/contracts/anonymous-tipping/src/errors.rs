@@ -1,3 +1,5 @@
+#![no_std]
+
 /// Stable backend-facing error codes for tipping contract
 /// Maps from contract Error enum values to predictable 60xx codes
 pub mod codes {
@@ -10,9 +12,6 @@ pub mod codes {
     pub const RATE_LIMITED: u32 = 6007;
     pub const INVALID_RATE_LIMIT_CONFIG: u32 = 6008;
     pub const TOKEN_NOT_CONFIGURED: u32 = 6009;
-    pub const SETTLEMENT_REPLAY: u32 = 6010;
-    pub const SETTLEMENT_NOT_FOUND: u32 = 6011;
-    pub const RECIPIENT_MISMATCH: u32 = 6012;
 }
 
 /// Error classification for backend retry strategy
