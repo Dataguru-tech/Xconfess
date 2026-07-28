@@ -64,7 +64,6 @@ export const ANCHOR_ERROR_CODES = {
  * See: xconfess-contracts/contracts/anonymous-tipping/src/lib.rs
  */
 export const TIPPING_ERROR_CODES = {
-  // Tipping module (6000-6099)
   INVALID_TIP_AMOUNT: 6001,
   METADATA_TOO_LONG: 6002,
   TOTAL_OVERFLOW: 6003,
@@ -73,6 +72,10 @@ export const TIPPING_ERROR_CODES = {
   CONTRACT_PAUSED: 6006,
   RATE_LIMITED: 6007,
   INVALID_RATE_LIMIT_CONFIG: 6008,
+  TOKEN_NOT_CONFIGURED: 6009,
+  SETTLEMENT_REPLAY: 6010,
+  SETTLEMENT_NOT_FOUND: 6011,
+  RECIPIENT_MISMATCH: 6012,
 } as const;
 
 /**
@@ -135,6 +138,10 @@ const ERROR_CLASSIFICATIONS: Record<ErrorCodeValue, ContractErrorClassification>
   [TIPPING_ERROR_CODES.CONTRACT_PAUSED]: ContractErrorClassification.RETRYABLE,
   [TIPPING_ERROR_CODES.RATE_LIMITED]: ContractErrorClassification.RETRYABLE,
   [TIPPING_ERROR_CODES.INVALID_RATE_LIMIT_CONFIG]: ContractErrorClassification.TERMINAL,
+  [TIPPING_ERROR_CODES.TOKEN_NOT_CONFIGURED]: ContractErrorClassification.TERMINAL,
+  [TIPPING_ERROR_CODES.SETTLEMENT_REPLAY]: ContractErrorClassification.TERMINAL,
+  [TIPPING_ERROR_CODES.SETTLEMENT_NOT_FOUND]: ContractErrorClassification.TERMINAL,
+  [TIPPING_ERROR_CODES.RECIPIENT_MISMATCH]: ContractErrorClassification.TERMINAL,
 };
 
 /**

@@ -323,10 +323,9 @@ mod adversarial {
         let (env, id) = setup();
         let c = mk_client(&env, &id);
         let recipient = Address::generate(&env);
-        let amount: i128 = 1_000_000_000_000;
-        let sid = c.send_tip(&Address::generate(&env), &recipient, &amount);
+        let sid = c.send_tip(&Address::generate(&env), &recipient, &AnonymousTipping::MAX_TIP_AMOUNT);
         assert_eq!(sid, 1);
-        assert_eq!(c.get_tips(&recipient), amount);
+        assert_eq!(c.get_tips(&recipient), AnonymousTipping::MAX_TIP_AMOUNT);
     }
 
     #[test]
@@ -600,5 +599,78 @@ mod replay_correlation {
         // Backend can correlate alice's id_a=1, bob's id_b=2, carol's id_c=3
         // into a single ordered stream without ambiguity.
         assert_eq!(c.latest_settlement_nonce(), 3);
+    }
+
+    // ── settlement receipt adversarial tests ─────────────────────────────────
+    use crate::Error;
+
+    #[test]
+    fn claim_receipt_succeeds_for_valid_settlement() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let recipient = Address::generate(&env);
+        let sid = c.send_tip(&Address::generate(&env), &recipient, &100i128);
+        let receipt = c.claim_receipt(&sid);
+        assert_eq!(receipt.settlement_id, sid);
+        assert_eq!(receipt.recipient, recipient);
+        assert_eq!(receipt.amount, 100i128);
+    }
+
+    #[test]
+    fn claim_receipt_returns_not_found_for_unknown_id() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let result = c.try_claim_receipt(&999_999_u64);
+        assert_eq!(result, Err(Ok(Error::SettlementNotFound)));
+    }
+
+    #[test]
+    fn verify_settlement_returns_recipient_mismatch() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let recipient = Address::generate(&env);
+        let wrong = Address::generate(&env);
+        c.send_tip(&Address::generate(&env), &recipient, &100i128);
+        let result = c.try_verify_settlement(&1_u64, &wrong);
+        assert_eq!(result, Err(Ok(Error::RecipientMismatch)));
+    }
+
+    #[test]
+    fn verify_settlement_succeeds_for_matching_recipient() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let recipient = Address::generate(&env);
+        c.send_tip(&Address::generate(&env), &recipient, &250i128);
+        let receipt = c.verify_settlement(&1_u64, &recipient);
+        assert_eq!(receipt.amount, 250i128);
+        assert_eq!(receipt.recipient, recipient);
+    }
+
+    #[test]
+    fn settlement_receipts_are_distinct_across_multiple_tips() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let alice = Address::generate(&env);
+        let bob = Address::generate(&env);
+        let sid1 = c.send_tip(&Address::generate(&env), &alice, &100i128);
+        let sid2 = c.send_tip(&Address::generate(&env), &bob, &200i128);
+        let r1 = c.claim_receipt(&sid1);
+        let r2 = c.claim_receipt(&sid2);
+        assert_eq!(r1.recipient, alice);
+        assert_eq!(r1.amount, 100i128);
+        assert_eq!(r2.recipient, bob);
+        assert_eq!(r2.amount, 200i128);
+    }
+
+    #[test]
+    fn receipt_timestamp_is_nonzero_on_successful_tip() {
+        let (env, id) = setup();
+        let c = mk_client(&env, &id);
+        let recipient = Address::generate(&env);
+        let sid = c.send_tip(&Address::generate(&env), &recipient, &50i128);
+        let receipt = c.claim_receipt(&sid);
+        assert_eq!(receipt.settlement_id, sid);
+        assert_eq!(receipt.recipient, recipient);
+        assert_eq!(receipt.amount, 50i128);
     }
 }
