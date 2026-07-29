@@ -762,4 +762,25 @@ mod tests {
             Ok(())
         );
     }
+
+    #[test]
+    fn public_event_metadata_matches_documented_abi() {
+        let abi_docs = include_str!("../../docs/contract-abi-reference.md");
+
+        for fixture in PUBLIC_EVENT_SCHEMA_FIXTURES {
+            assert!(
+                abi_docs.contains(fixture.event_name),
+                "{} is missing from the ABI reference",
+                fixture.event_name
+            );
+            for field in fixture.field_order {
+                assert!(
+                    abi_docs.contains(field),
+                    "{} field {} is missing from the ABI reference",
+                    fixture.event_name,
+                    field
+                );
+            }
+        }
+    }
 }
