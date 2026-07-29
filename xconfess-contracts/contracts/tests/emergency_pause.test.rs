@@ -14,10 +14,10 @@
 
 extern crate std;
 
+use anonymous_tipping::{AnonymousTipping, AnonymousTippingClient, Error as TippingError};
 use confession_anchor::{ConfessionAnchor, ConfessionAnchorClient};
 use confession_registry::governance::model::CriticalAction;
 use confession_registry::{ConfessionRegistry, ConfessionRegistryClient};
-use anonymous_tipping::{AnonymousTipping, AnonymousTippingClient, Error as TippingError};
 use reputation_badges::{BadgeType, ReputationBadges, ReputationBadgesClient};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String as SorobanString};
 
@@ -128,7 +128,10 @@ fn tipping_unauthorized_caller_cannot_pause() {
     let outsider = Address::generate(&env);
 
     let result = client.try_pause(&outsider, &SorobanString::from_str(&env, "incident"));
-    assert!(result.is_err(), "tipping: non-owner must not be able to pause");
+    assert!(
+        result.is_err(),
+        "tipping: non-owner must not be able to pause"
+    );
     assert!(!client.is_paused());
 }
 
@@ -210,7 +213,9 @@ fn registry_governance_pause_blocks_create_confession_and_execute_can_unpause() 
 
     let hash = BytesN::from_array(&env, &[0x22; 32]);
     assert!(
-        client.try_create_confession(&author, &hash, &1_000u64).is_err(),
+        client
+            .try_create_confession(&author, &hash, &1_000u64)
+            .is_err(),
         "registry: create_confession must fail while paused"
     );
 
