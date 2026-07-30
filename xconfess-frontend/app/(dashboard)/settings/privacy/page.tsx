@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Shield, Eye, EyeOff, MessageSquare, Database, Save, Sun, Moon, Laptop, Lock, Globe, Bell, BellOff } from 'lucide-react';
 import { useGlobalToast } from '@/app/components/common/Toast';
-import { useTheme } from '@/app/lib/hooks/useTheme';
+import { useTheme } from '@/app/components/common/ThemeProvider'; // TODO: point at your actual theme context
 
 interface PrivacySettings {
   isDiscoverable: boolean;
@@ -80,6 +80,12 @@ const TOGGLE_CONFIGS: {
   },
 ];
 
+const THEME_OPTIONS: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }[] = [
+  { key: 'light', label: 'Light', icon: <Sun className="h-4 w-4" /> },
+  { key: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" /> },
+  { key: 'system', label: 'System', icon: <Laptop className="h-4 w-4" /> },
+];
+
 export default function PrivacySettingsPage() {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<PrivacySettings | null>(null);
@@ -92,7 +98,6 @@ export default function PrivacySettingsPage() {
   const loadSettings = React.useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-
     try {
       const response = await fetch('/api/users/privacy-settings', {
         credentials: 'include',
@@ -113,9 +118,7 @@ export default function PrivacySettingsPage() {
     }
   }, [toast]);
 
-  useEffect(() => {
-    void loadSettings();
-  }, [loadSettings]);
+  useEffect(() => { loadSettings(); }, [loadSettings]);
 
   const handleToggle = (key: keyof PrivacySettings, value: boolean) => {
     if (!settings) return;
@@ -126,20 +129,16 @@ export default function PrivacySettingsPage() {
   const handleSave = async () => {
     if (!settings) return;
 
+    setSaving(true);
     try {
-      setSaving(true);
       const response = await fetch('/api/users/privacy-settings', {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(settings),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
+      if (!response.ok) throw new Error('Failed to save');
 
       const updated: PrivacySettings = await response.json();
       setSettings(updated);
@@ -154,23 +153,18 @@ export default function PrivacySettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
       </div>
     );
   }
 
-  if (!settings) {
+  if (loadError || !settings) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="space-y-3 text-center">
-          <p className="text-gray-400">{loadError ?? 'Failed to load settings'}</p>
-          <button
-            onClick={() => {
-              void loadSettings();
-            }}
-            className="rounded-md border border-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-800"
-          >
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-red-900/20 border border-red-800 rounded-xl p-6 text-center">
+          <p className="text-red-200 mb-4">{loadError ?? 'Failed to load privacy settings.'}</p>
+          <button onClick={loadSettings} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white">
             Retry
           </button>
         </div>
@@ -179,62 +173,15 @@ export default function PrivacySettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Shield className="h-6 w-6" />
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <Shield className="w-8 h-8 text-purple-500" />
           Privacy Settings
         </h1>
         <p className="text-gray-400 mt-1">
           Control your visibility, interactions, and data preferences. Each setting maps directly to how your profile behaves across the platform.
         </p>
-      </div>
-
-      <div className="bg-gray-800 rounded-lg mb-4">
-        <div className="p-4 border-b border-gray-700">
-          <h2 className="font-semibold text-white flex items-center gap-2">
-            <Sun className="h-4 w-4" />
-            Theme Preference
-          </h2>
-          <p className="text-sm text-gray-400">Choose your appearance</p>
-        </div>
-        <div className="p-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setTheme("light")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                theme === "light"
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              <Sun className="h-4 w-4" />
-              Light
-            </button>
-            <button
-              onClick={() => setTheme("dark")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                theme === "dark"
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              <Moon className="h-4 w-4" />
-              Dark
-            </button>
-            <button
-              onClick={() => setTheme("system")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                theme === "system"
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              <Laptop className="h-4 w-4" />
-              System
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="bg-gray-800 rounded-lg mb-4">
@@ -255,23 +202,14 @@ export default function PrivacySettingsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0">
                     <div className="mt-0.5 flex-shrink-0">
-                      {isOn
-                        ? config.icon
-                        : config.iconOff ?? config.icon}
+                      {isOn ? config.icon : config.iconOff ?? config.icon}
                     </div>
                     <div className="min-w-0">
-                      <label
-                        htmlFor={`toggle-${config.key}`}
-                        className="font-medium text-white cursor-pointer"
-                      >
+                      <label htmlFor={`toggle-${config.key}`} className="font-medium text-white cursor-pointer">
                         {config.label}
                       </label>
-                      <p className="text-sm text-gray-400 mt-0.5">
-                        {config.description}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1 italic">
-                        {config.effect}
-                      </p>
+                      <p className="text-sm text-gray-400 mt-0.5">{config.description}</p>
+                      <p className="text-xs text-gray-500 mt-1 italic">{config.effect}</p>
                     </div>
                   </div>
                   <div className="flex-shrink-0 pt-0.5">
@@ -285,20 +223,10 @@ export default function PrivacySettingsPage() {
                 <div className="ml-8 mt-2">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      isOn
-                        ? 'bg-green-900/50 text-green-400'
-                        : 'bg-gray-700 text-gray-400'
+                      isOn ? 'bg-green-900/50 text-green-400' : 'bg-gray-700 text-gray-400'
                     }`}
                   >
-                    {isOn ? (
-                      <>
-                        <Eye className="h-3 w-3" /> Enabled
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-3 w-3" /> Disabled
-                      </>
-                    )}
+                    {isOn ? (<><Eye className="h-3 w-3" /> Enabled</>) : (<><EyeOff className="h-3 w-3" /> Disabled</>)}
                   </span>
                 </div>
               </div>
@@ -307,13 +235,30 @@ export default function PrivacySettingsPage() {
         </div>
       </div>
 
+      <div className="bg-gray-800 rounded-lg mb-4 p-4">
+        <h2 className="font-semibold text-white mb-3">Appearance</h2>
+        <div className="flex gap-2">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setTheme(opt.key)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                theme === opt.key ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <button
         onClick={handleSave}
         disabled={saving || !dirty}
         className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium"
       >
-        <Save className="h-4 w-4" />
-        {saving ? 'Saving...' : 'Save Settings'}
+        {saving ? 'Saving...' : (<><Save className="h-5 w-5" /> Save Privacy Settings</>)}
       </button>
 
       {dirty && (
