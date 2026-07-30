@@ -1,150 +1,151 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Bell, Mail, Smartphone, Moon, Save, Clock, RefreshCw } from 'lucide-react';
+import { Shield, Eye, EyeOff, MessageSquare, Database, Save, Sun, Moon, Laptop, Lock, Globe, Bell, BellOff } from 'lucide-react';
 import { useGlobalToast } from '@/app/components/common/Toast';
+import { useTheme } from '@/app/components/common/ThemeProvider'; // TODO: point at your actual theme context
 
-interface ChannelPrefs {
-  inApp: boolean;
-  email: boolean;
-  push: boolean;
+interface PrivacySettings {
+  isDiscoverable: boolean;
+  canReceiveReplies: boolean;
+  showReactions: boolean;
+  dataProcessingConsent: boolean;
 }
 
-interface NotificationPreferences {
-  reactions: ChannelPrefs;
-  comments: ChannelPrefs;
-  mentions: ChannelPrefs;
-  tips: ChannelPrefs;
-  reports: ChannelPrefs;
-  system: ChannelPrefs;
-  enableQuietHours: boolean;
-  quietHoursStart: string | null;
-  quietHoursEnd: string | null;
-  timezone: string | null;
+interface ToggleProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  id: string;
 }
 
-type CategoryKey = 'reactions' | 'comments' | 'mentions' | 'tips' | 'reports' | 'system';
-type ChannelKey = 'inApp' | 'email' | 'push';
+function ToggleSwitch({ checked, onChange, id }: ToggleProps) {
+  return (
+    <button
+      id={id}
+      role="switch"
+      type="button"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+        checked ? 'bg-purple-600' : 'bg-gray-600'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+          checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}
 
-const DEFAULT_PREFS: NotificationPreferences = {
-  reactions: { inApp: true, email: true, push: true },
-  comments: { inApp: true, email: true, push: true },
-  mentions: { inApp: true, email: true, push: true },
-  tips: { inApp: true, email: true, push: true },
-  reports: { inApp: true, email: true, push: true },
-  system: { inApp: true, email: true, push: true },
-  enableQuietHours: false,
-  quietHoursStart: '22:00',
-  quietHoursEnd: '08:00',
-  timezone: null,
-};
-
-const CATEGORIES: { key: CategoryKey; label: string; description: string }[] = [
-  { key: 'reactions', label: 'Reactions', description: 'When someone reacts to your confession' },
-  { key: 'comments', label: 'Comments', description: 'When someone comments on your confession' },
-  { key: 'mentions', label: 'Mentions', description: 'When someone mentions you' },
-  { key: 'tips', label: 'Tips', description: 'When someone sends you a tip' },
-  { key: 'reports', label: 'Reports', description: 'Updates on content reports' },
-  { key: 'system', label: 'System', description: 'System announcements and updates' },
+const TOGGLE_CONFIGS: {
+  key: keyof PrivacySettings;
+  label: string;
+  description: string;
+  effect: string;
+  icon: React.ReactNode;
+  iconOff?: React.ReactNode;
+}[] = [
+  {
+    key: 'isDiscoverable',
+    label: 'Profile Discovery',
+    description: 'Allow others to find your profile in search and the user directory.',
+    effect: 'When off, your profile is hidden from search results and the public directory. Direct links to your profile will still work.',
+    icon: <Globe className="h-5 w-5 text-purple-400" />,
+    iconOff: <Lock className="h-5 w-5 text-gray-500" />,
+  },
+  {
+    key: 'canReceiveReplies',
+    label: 'Allow Replies',
+    description: 'Let other users reply to your confessions.',
+    effect: 'When off, the reply button is disabled on all your confessions. Existing replies remain visible.',
+    icon: <MessageSquare className="h-5 w-5 text-blue-400" />,
+  },
+  {
+    key: 'showReactions',
+    label: 'Show Reactions',
+    description: 'Display emoji reactions on your confessions.',
+    effect: 'When off, reaction counts and buttons are hidden on your confessions. Others can still react, but counts are not shown.',
+    icon: <Bell className="h-5 w-5 text-yellow-400" />,
+    iconOff: <BellOff className="h-5 w-5 text-gray-500" />,
+  },
+  {
+    key: 'dataProcessingConsent',
+    label: 'Data Processing Consent',
+    description: 'Allow processing of your data for service improvement and analytics.',
+    effect: 'When off, your usage data is excluded from analytics aggregation. Core functionality is not affected.',
+    icon: <Database className="h-5 w-5 text-green-400" />,
+  },
 ];
 
-const CHANNELS: { key: ChannelKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'inApp', label: 'In-App', icon: <Bell className="w-4 h-4" /> },
-  { key: 'email', label: 'Email', icon: <Mail className="w-4 h-4" /> },
-  { key: 'push', label: 'Push', icon: <Smartphone className="w-4 h-4" /> },
+const THEME_OPTIONS: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }[] = [
+  { key: 'light', label: 'Light', icon: <Sun className="h-4 w-4" /> },
+  { key: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" /> },
+  { key: 'system', label: 'System', icon: <Laptop className="h-4 w-4" /> },
 ];
 
-export default function NotificationSettingsPage() {
-  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFS);
-  // Last value confirmed by the server — the revert target for undo.
-  const [lastSaved, setLastSaved] = useState<NotificationPreferences>(DEFAULT_PREFS);
+export default function PrivacySettingsPage() {
+  const { theme, setTheme } = useTheme();
+  const [settings, setSettings] = useState<PrivacySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
   const toast = useGlobalToast();
 
-  const loadPreferences = React.useCallback(async () => {
+  const loadSettings = React.useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
-      const response = await fetch('/api/users/notification-preferences', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to load preferences');
-      const data = await response.json();
-      const normalized: NotificationPreferences = {
-        reactions: { inApp: true, email: true, push: true, ...data.reactions },
-        comments: { inApp: true, email: true, push: true, ...data.comments },
-        mentions: { inApp: true, email: true, push: true, ...data.mentions },
-        tips: { inApp: true, email: true, push: true, ...data.tips },
-        reports: { inApp: true, email: true, push: true, ...data.reports },
-        system: { inApp: true, email: true, push: true, ...data.system },
-        enableQuietHours: data.enableQuietHours ?? false,
-        quietHoursStart: data.quietHoursStart ?? '22:00',
-        quietHoursEnd: data.quietHoursEnd ?? '08:00',
-        timezone: data.timezone ?? null,
-      };
-      setPreferences(normalized);
-      setLastSaved(normalized);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      const response = await fetch('/api/users/privacy-settings', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load settings');
+      }
+
+      const data: PrivacySettings = await response.json();
+      setSettings(data);
+      setDirty(false);
+    } catch {
+      setLoadError('Failed to load privacy settings.');
+      toast.error('Failed to load privacy settings');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
-  useEffect(() => { loadPreferences(); }, [loadPreferences]);
+  useEffect(() => { loadSettings(); }, [loadSettings]);
 
-  const toggleChannel = (category: CategoryKey, channel: ChannelKey) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [channel]: !prev[category][channel],
-      },
-    }));
-  };
-
-  /** Persists `target` to the server and updates local state on success. */
-  const persist = async (target: NotificationPreferences) => {
-    const response = await fetch('/api/users/notification-preferences', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(target),
-    });
-
-    if (!response.ok) throw new Error('Failed to save');
-
-    setPreferences(target);
-    setLastSaved(target);
-  };
-
-  const handleUndo = async (previous: NotificationPreferences) => {
-    try {
-      await persist(previous);
-      toast.success('Change reverted');
-    } catch {
-      toast.error('Failed to revert preferences');
-    }
+  const handleToggle = (key: keyof PrivacySettings, value: boolean) => {
+    if (!settings) return;
+    setSettings({ ...settings, [key]: value });
+    setDirty(true);
   };
 
   const handleSave = async () => {
-    const beforeSave = lastSaved;
+    if (!settings) return;
+
     setSaving(true);
     try {
-      await persist(preferences);
-
-      // Every notification change is treated as sensitive — always offer undo.
-      toast.success('Notification preferences saved', {
-        duration: 8000,
-        action: {
-          label: 'Undo',
-          onClick: () => {
-            void handleUndo(beforeSave);
-          },
-        },
+      const response = await fetch('/api/users/privacy-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(settings),
       });
+
+      if (!response.ok) throw new Error('Failed to save');
+
+      const updated: PrivacySettings = await response.json();
+      setSettings(updated);
+      setDirty(false);
+      toast.success('Privacy settings saved successfully');
     } catch {
-      toast.error('Failed to save preferences');
+      toast.error('Failed to save privacy settings');
     } finally {
       setSaving(false);
     }
@@ -158,12 +159,12 @@ export default function NotificationSettingsPage() {
     );
   }
 
-  if (error) {
+  if (loadError || !settings) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="bg-red-900/20 border border-red-800 rounded-xl p-6 text-center">
-          <p className="text-red-200 mb-4">{error}</p>
-          <button onClick={loadPreferences} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white">
+          <p className="text-red-200 mb-4">{loadError ?? 'Failed to load privacy settings.'}</p>
+          <button onClick={loadSettings} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white">
             Retry
           </button>
         </div>
@@ -175,122 +176,96 @@ export default function NotificationSettingsPage() {
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Bell className="w-8 h-8 text-purple-500" />
-          Notification Preferences
+          <Shield className="w-8 h-8 text-purple-500" />
+          Privacy Settings
         </h1>
-        <p className="text-gray-400 mt-2">
-          Control which notifications you receive and how they are delivered
+        <p className="text-gray-400 mt-1">
+          Control your visibility, interactions, and data preferences. Each setting maps directly to how your profile behaves across the platform.
         </p>
       </div>
 
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden mb-6">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left p-4 text-gray-400 font-medium">Category</th>
-                {CHANNELS.map((ch) => (
-                  <th key={ch.key} className="p-4 text-gray-400 font-medium text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      {ch.icon}
-                      <span className="hidden sm:inline">{ch.label}</span>
+      <div className="bg-gray-800 rounded-lg mb-4">
+        <div className="p-4 border-b border-gray-700">
+          <h2 className="font-semibold text-white flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Privacy Controls
+          </h2>
+          <p className="text-sm text-gray-400">
+            Manage how your profile and content are visible to others
+          </p>
+        </div>
+        <div className="divide-y divide-gray-700">
+          {TOGGLE_CONFIGS.map((config) => {
+            const isOn = settings[config.key];
+            return (
+              <div key={config.key} className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="mt-0.5 flex-shrink-0">
+                      {isOn ? config.icon : config.iconOff ?? config.icon}
                     </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {CATEGORIES.map((cat) => (
-                <tr key={cat.key} className="border-b border-zinc-800 last:border-0 hover:bg-zinc-800/50">
-                  <td className="p-4">
-                    <p className="text-white font-medium">{cat.label}</p>
-                    <p className="text-gray-500 text-sm">{cat.description}</p>
-                  </td>
-                  {CHANNELS.map((ch) => (
-                    <td key={ch.key} className="p-4 text-center">
-                      <button
-                        onClick={() => toggleChannel(cat.key, ch.key)}
-                        className={`w-10 h-6 rounded-full transition-colors relative ${preferences[cat.key][ch.key] ? 'bg-purple-600' : 'bg-zinc-700'
-                          }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${preferences[cat.key][ch.key] ? 'translate-x-[18px]' : 'translate-x-0.5'
-                            }`}
-                        />
-                      </button>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div className="min-w-0">
+                      <label htmlFor={`toggle-${config.key}`} className="font-medium text-white cursor-pointer">
+                        {config.label}
+                      </label>
+                      <p className="text-sm text-gray-400 mt-0.5">{config.description}</p>
+                      <p className="text-xs text-gray-500 mt-1 italic">{config.effect}</p>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 pt-0.5">
+                    <ToggleSwitch
+                      id={`toggle-${config.key}`}
+                      checked={isOn}
+                      onChange={(val) => handleToggle(config.key, val)}
+                    />
+                  </div>
+                </div>
+                <div className="ml-8 mt-2">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      isOn ? 'bg-green-900/50 text-green-400' : 'bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    {isOn ? (<><Eye className="h-3 w-3" /> Enabled</>) : (<><EyeOff className="h-3 w-3" /> Disabled</>)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Moon className="w-6 h-6 text-indigo-400" />
-            <div>
-              <h2 className="text-lg font-semibold text-white">Quiet Hours</h2>
-              <p className="text-sm text-gray-400">Suppress notifications during specified hours</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setPreferences((p) => ({ ...p, enableQuietHours: !p.enableQuietHours }))}
-            className={`w-12 h-7 rounded-full transition-colors relative ${preferences.enableQuietHours ? 'bg-purple-600' : 'bg-zinc-700'
+      <div className="bg-gray-800 rounded-lg mb-4 p-4">
+        <h2 className="font-semibold text-white mb-3">Appearance</h2>
+        <div className="flex gap-2">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setTheme(opt.key)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                theme === opt.key ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
-          >
-            <span
-              className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${preferences.enableQuietHours ? 'translate-x-[22px]' : 'translate-x-0.5'
-                }`}
-            />
-          </button>
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
         </div>
-
-        {preferences.enableQuietHours && (
-          <div className="flex flex-wrap gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <label className="text-sm text-gray-300">From:</label>
-              <input
-                type="time"
-                value={preferences.quietHoursStart || '22:00'}
-                onChange={(e) => setPreferences((p) => ({ ...p, quietHoursStart: e.target.value }))}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <label className="text-sm text-gray-300">To:</label>
-              <input
-                type="time"
-                value={preferences.quietHoursEnd || '08:00'}
-                onChange={(e) => setPreferences((p) => ({ ...p, quietHoursEnd: e.target.value }))}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       <button
         onClick={handleSave}
-        disabled={saving}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl text-white font-medium transition-colors"
+        disabled={saving || !dirty}
+        className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium"
       >
-        {saving ? (
-          <>
-            <RefreshCw className="w-5 h-5 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="w-5 h-5" />
-            Save Preferences
-          </>
-        )}
+        {saving ? 'Saving...' : (<><Save className="h-5 w-5" /> Save Privacy Settings</>)}
       </button>
+
+      {dirty && (
+        <p className="text-center text-xs text-yellow-500 mt-2">
+          You have unsaved changes.
+        </p>
+      )}
     </div>
   );
 }

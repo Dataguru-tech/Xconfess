@@ -124,6 +124,11 @@ export const ConfessionCard = memo(({ confession }: Props) => {
         </div>
       </div>
 
+      <Link
+        href={`/confessions/${confession.id}`}
+        className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1"
+        aria-label={`Read full confession: ${confession.content.slice(0, 80)}...`}
+      >
       <ScrollRestorationLink href={`/confessions/${confession.id}`} className="group block">
         <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--primary-deep)]">
           Confession

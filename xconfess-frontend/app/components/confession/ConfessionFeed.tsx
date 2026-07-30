@@ -16,6 +16,8 @@ const OVERSCAN = 3;
 
 export const ConfessionFeed = () => {
   const router = useRouter();
+  const { page, setPage, limit } = usePaginationState();
+
   const { selectedIds, clearItems } = useComparisonStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,116 @@ export const ConfessionFeed = () => {
     }
   };
 
+  const renderPaginationItems = () => {
+    const itemsList = [];
+    const maxVisible = 5;
+
+    let startPage = Math.max(1, page - 2);
+    const endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      itemsList.push(
+        <PaginationItem key="1">
+          <PaginationLink
+            onClick={() => setPage(1)}
+            aria-label="Go to page 1"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>,
+      );
+      if (startPage > 2) {
+        itemsList.push(<PaginationEllipsis key="ellipsis-start" aria-hidden="true" />);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      itemsList.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            isActive={i === page}
+            onClick={() => setPage(i)}
+            aria-label={`Go to page ${i}`}
+            aria-current={i === page ? "page" : undefined}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        itemsList.push(<PaginationEllipsis key="ellipsis-end" aria-hidden="true" />);
+      }
+      itemsList.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setPage(totalPages)}
+            aria-label={`Go to page ${totalPages}`}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    return itemsList;
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-3xl py-2 relative">
+      {/* Screen reader announcer for background fetching/updating state */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {isFetching && !isLoading ? "Updating feed contents..." : ""}
+      </div>
+
+      {/* Reserve vertical space to avoid layout shifts between states */}
+      <div className="min-h-[320px] sm:min-h-[420px] md:min-h-[520px]">
+        {/* Empty State */}
+        {isEmpty && (
+          <div className="luxury-panel rounded-[30px] p-8 text-center" role="region" aria-label="Empty feed state">
+            <p className="mb-3 font-editorial text-3xl sm:text-4xl text-[var(--foreground)]">
+              No confessions yet.
+            </p>
+            <p className="mb-4 max-w-xl mx-auto text-sm leading-7 text-[var(--secondary)]">
+              Be the first to set the tone for the community — share something
+              thoughtful, kind, and true. Your first post helps others
+              understand what belongs here.
+            </p>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => scrollToComposer()}
+                className="rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-deep))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_18px_40px_-22px_rgba(143,109,60,0.85)] transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Begin writing
+              </button>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-5 py-2.5 text-sm font-medium text-[var(--secondary)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <ErrorState
+            error={undefined}
+            title="Unable to load feed"
+            description="We couldn't load recent confessions. Please try again or check your connection."
+            showRetry
+            onRetry={handleRetry}
+          />
+        )}
   const handleRetry = () => {
     void refetch();
   };
