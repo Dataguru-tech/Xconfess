@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import Link from "next/link";
+import { ScrollRestorationLink } from "@/app/components/common/ScrollRestorationLink";
 import Image from "next/image";
 import { MessageSquare, Eye } from "lucide-react";
 import { ReactionButton } from "./ReactionButtons";
@@ -129,13 +129,14 @@ export const ConfessionCard = memo(({ confession }: Props) => {
         className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1"
         aria-label={`Read full confession: ${confession.content.slice(0, 80)}...`}
       >
+      <ScrollRestorationLink href={`/confessions/${confession.id}`} className="group block">
         <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--primary-deep)]">
           Confession
         </p>
         <p className="mb-5 font-editorial text-[1.65rem] leading-[1.5] text-[var(--foreground)] transition-colors group-hover:text-black">
           {confession.content}
         </p>
-      </Link>
+      </ScrollRestorationLink>
 
       <div className="mt-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3 text-sm text-[var(--secondary)]">

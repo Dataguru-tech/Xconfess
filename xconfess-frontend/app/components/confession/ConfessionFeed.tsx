@@ -1,21 +1,14 @@
 "use client";
 
-import { useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRouter } from "next/navigation";
-import { Scale, ArrowRight, X } from "lucide-react";
-import { ConfessionCard } from "./ConfessionCard";
-import { ConfessionFeedSkeleton } from "./LoadingSkeleton";
-import { useConfessionsQuery } from "../../lib/hooks/useConfessionsQuery";
-import { usePaginationState } from "../../lib/hooks/usePaginationState";
-import { useComparisonStore } from "../../lib/store/comparisonStore";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useRouter } from "next/navigation";
+import { Scale, ArrowRight, X, ArrowUp } from "lucide-react";
 import { ConfessionCard } from "./ConfessionCard";
 import { ConfessionFeedSkeleton } from "./LoadingSkeleton";
 import { useInfiniteConfessions } from "../../lib/hooks/useConfessionsQuery";
+import { useComparisonStore } from "../../lib/store/comparisonStore";
 import ErrorState from "../common/ErrorState";
-import { ArrowUp } from "lucide-react";
 
 const ESTIMATED_CARD_HEIGHT = 300;
 const SCROLL_THRESHOLD = 400;
@@ -26,24 +19,9 @@ export const ConfessionFeed = () => {
   const { page, setPage, limit } = usePaginationState();
 
   const { selectedIds, clearItems } = useComparisonStore();
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, isFetching, error, refetch } = useConfessionsQuery({
-    page,
-    limit,
-  });
-
-  const confessions = data?.confessions ?? [];
-  const totalPages = data?.total
-    ? Math.ceil(data.total / limit)
-    : data?.hasMore
-      ? page + 1
-      : page;
-  const isEmpty = !isLoading && confessions.length === 0;
-
-  const scrollParentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: confessions.length,
-    getScrollElement: () => scrollParentRef.current,
   const {
     data,
     isLoading,
@@ -56,9 +34,6 @@ export const ConfessionFeed = () => {
 
   const allConfessions = data?.pages.flatMap((page) => page.confessions) ?? [];
   const isEmpty = !isLoading && allConfessions.length === 0;
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useWindowVirtualizer({
     count: allConfessions.length,

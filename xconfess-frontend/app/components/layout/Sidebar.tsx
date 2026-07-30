@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { X, LogOut, User, MessageSquare, Home, Search, BarChart3, Anchor } from "lucide-react";
+import { X, LogOut, User, MessageSquare, Home, Search, BarChart3, Anchor, Keyboard } from "lucide-react";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useFocusTrap } from "@/app/lib/hooks/useFocusTrap";
+import { Modal } from "@/app/components/ui/modal";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -156,6 +158,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
               </div>
               <button
+                onClick={() => { setHelpOpen(true); }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-600 dark:text-slate-400 hover:bg-zinc-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-zinc-200 dark:border-slate-700 min-h-[44px] mb-2"
+                aria-label="Keyboard shortcuts"
+              >
+                <Keyboard size={18} />
+                <span>Shortcuts</span>
+              </button>
+              <button
                 onClick={() => {
                   logout();
                   onClose();
@@ -167,8 +177,57 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             </div>
           )}
+
+          <KeyboardShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
         </div>
       </div>
+
+      <KeyboardShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
+  );
+}
+
+function KeyboardShortcutsHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={open} onClose={onClose} title="Keyboard Shortcuts">
+      <div className="space-y-3" role="list" aria-label="Keyboard shortcut list">
+        <ShortcutRow keys={["j", "k"]}>Navigate down / up in feed</ShortcutRow>
+        <ShortcutRow keys={["Enter"]}>Open selected confession</ShortcutRow>
+        <ShortcutRow keys={["r"]}>React to selected confession</ShortcutRow>
+        <ShortcutRow keys={["c"]}>Open comment box (detail)</ShortcutRow>
+        <ShortcutRow keys={["n"]}>New confession — focus composer</ShortcutRow>
+        <ShortcutRow keys={["/"]}>Focus search</ShortcutRow>
+        <ShortcutRow keys={["g", "h"]} or={["g", "p"]} or={["g", "s"]}>Go Home / Profile / Settings</ShortcutRow>
+        <ShortcutRow keys={["?"]}>Open this shortcuts help</ShortcutRow>
+        <ShortcutRow keys={["Esc"]}>Close modals / help</ShortcutRow>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Button onClick={onClose}>Close</Button>
+      </div>
+    </Modal>
+  );
+}
+
+function ShortcutRow({ keys, or, children }: { keys: string[]; or?: string[]; children: React.ReactNode }) {
+  const formatKeys = (k: string[]) => k.map((key, i) => (
+    <React.Fragment key={key}>
+      {i > 0 && <span className="mx-1 text-zinc-500">then</span>}
+      <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded border border-zinc-600 bg-zinc-800 text-xs text-zinc-200 font-mono">{key}</kbd>
+    </React.Fragment>
+  ));
+
+  return (
+    <div className="flex items-start justify-between gap-4 py-1" role="listitem">
+      <div className="text-sm text-zinc-300">{children}</div>
+      <div className="flex items-center shrink-0 text-xs text-zinc-400">
+        {formatKeys(keys)}
+        {or && (
+          <>
+            <span className="mx-1 text-zinc-500">or</span>
+            {formatKeys(or)}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
