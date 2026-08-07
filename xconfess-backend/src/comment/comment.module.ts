@@ -9,10 +9,16 @@ import { ModerationComment } from './entities/moderation-comment.entity';
 import { OutboxEvent } from '../common/entities/outbox-event.entity';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
+import { AnonymousConfession } from '../confession/entities/confession.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Comment, ModerationComment, OutboxEvent]),
+    TypeOrmModule.forFeature([
+      Comment,
+      AnonymousConfession,
+      ModerationComment,
+      OutboxEvent,
+    ]),
     AnalyticsModule,
     AuditLogModule,
   ],

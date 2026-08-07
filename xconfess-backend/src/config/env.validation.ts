@@ -72,6 +72,20 @@ export const envValidationSchema = Joi.object({
     'any.required':
       'CONFESSION_ENCRYPTION_KEY is required for confession security.',
   }),
+  ENCRYPTION_CURRENT_KEY_VERSION: Joi.string()
+    .pattern(/^v\d+$/)
+    .default('v1')
+    .messages({
+      'string.pattern.base':
+        'ENCRYPTION_CURRENT_KEY_VERSION must look like v1, v2, etc.',
+    }),
+  ENCRYPTION_MASTER_KEY_v1: Joi.string().hex().length(64).required().messages({
+    'string.length':
+      'ENCRYPTION_MASTER_KEY_v1 must be exactly 64 characters (32-byte hex).',
+    'string.hex': 'ENCRYPTION_MASTER_KEY_v1 must be a valid hexadecimal string.',
+    'any.required':
+      'ENCRYPTION_MASTER_KEY_v1 is required for envelope encryption.',
+  }),
 
   // â”€â”€ Stellar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   STELLAR_FEATURES_ENABLED: Joi.string()
@@ -159,4 +173,3 @@ export const envValidationSchema = Joi.object({
   // â”€â”€ Redis queue health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   REDIS_QUEUE_LATENCY_THRESHOLD_MS: Joi.number().default(250),
 }).options({ allowUnknown: true, abortEarly: false });
-

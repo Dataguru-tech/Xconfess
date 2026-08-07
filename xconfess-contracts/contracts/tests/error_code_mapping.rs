@@ -9,7 +9,6 @@ use confession_anchor::errors::{codes, ContractError, ErrorClassification};
 ///
 /// The expected user messages must stay in sync with the
 /// `mapContractErrorToUserMessage` table in CONTRACT_ERROR_CODES.md.
-
 /// Returns the expected user-facing message for a given contract error code.
 /// This mirrors the frontend lookup table documented in CONTRACT_ERROR_CODES.md.
 fn expected_user_message(code: u32) -> &'static str {

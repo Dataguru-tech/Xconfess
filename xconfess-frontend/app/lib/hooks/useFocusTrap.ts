@@ -13,6 +13,7 @@ const FOCUSABLE_SELECTORS = [
 
 interface UseFocusTrapOptions {
   isOpen: boolean;
+  active?: boolean;
   onClose?: () => void;
   /** If true, the trap is used as a dialog (focuses first element, restores on close) */
   dialog?: boolean;
@@ -27,7 +28,7 @@ interface UseFocusTrapOptions {
  *   const { containerRef } = useFocusTrap({ isOpen: showModal, onClose: handleClose, dialog: true });
  *   return <div ref={containerRef}>...</div>;
  */
-export function useFocusTrap({ isOpen, onClose, dialog = false }: UseFocusTrapOptions) {
+export function useFocusTrap({ isOpen, active, onClose, dialog = false }: UseFocusTrapOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -39,7 +40,7 @@ export function useFocusTrap({ isOpen, onClose, dialog = false }: UseFocusTrapOp
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !active) return;
 
     // Save the previously focused element so we can restore it on close
     if (dialog) {

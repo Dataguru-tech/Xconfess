@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Shield, Eye, EyeOff, MessageSquare, Database, Save, Sun, Moon, Laptop, Lock, Globe, Bell, BellOff } from 'lucide-react';
 import { useGlobalToast } from '@/app/components/common/Toast';
-import { useTheme } from '@/app/components/common/ThemeProvider'; // TODO: point at your actual theme context
+import { useTheme } from '@/app/lib/hooks/useTheme';
 
 interface PrivacySettings {
   isDiscoverable: boolean;

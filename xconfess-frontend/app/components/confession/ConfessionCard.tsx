@@ -124,12 +124,11 @@ export const ConfessionCard = memo(({ confession }: Props) => {
         </div>
       </div>
 
-      <Link
+      <ScrollRestorationLink
         href={`/confessions/${confession.id}`}
-        className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1"
+        className="group block rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         aria-label={`Read full confession: ${confession.content.slice(0, 80)}...`}
       >
-      <ScrollRestorationLink href={`/confessions/${confession.id}`} className="group block">
         <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--primary-deep)]">
           Confession
         </p>
@@ -151,14 +150,14 @@ export const ConfessionCard = memo(({ confession }: Props) => {
           )}
 
           {confession.commentCount !== undefined && (
-            <Link
+            <ScrollRestorationLink
               href={`/confessions/${confession.id}#comments`}
               className="flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 transition-colors hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               aria-label={`View ${confession.commentCount} comments`}
             >
               <MessageSquare className="h-4 w-4" aria-hidden="true" />
               <span>{confession.commentCount}</span>
-            </Link>
+            </ScrollRestorationLink>
           )}
         </div>
 

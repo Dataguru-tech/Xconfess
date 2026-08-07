@@ -264,7 +264,9 @@ fn anchor_repeated_pause_unpause_cycles_behave_correctly() {
     client.pause(&owner, &SorobanString::from_str(&env, "cycle-2-pause"));
     assert!(client.is_paused());
     assert!(
-        client.try_anchor_confession(&BytesN::from_array(&env, &[0xBB; 32]), &200u64).is_err(),
+        client
+            .try_anchor_confession(&BytesN::from_array(&env, &[0xBB; 32]), &200u64)
+            .is_err(),
         "writes must fail during second pause"
     );
     client.unpause(&owner, &SorobanString::from_str(&env, "cycle-2-unpause"));
@@ -298,7 +300,9 @@ fn anchor_double_pause_returns_already_paused() {
 
     // Second pause while already paused must fail
     assert!(
-        client.try_pause(&owner, &SorobanString::from_str(&env, "double-pause")).is_err(),
+        client
+            .try_pause(&owner, &SorobanString::from_str(&env, "double-pause"))
+            .is_err(),
         "pausing an already-paused contract must fail (AlreadyPaused)"
     );
 
@@ -319,7 +323,9 @@ fn anchor_double_unpause_returns_not_paused() {
 
     // Contract starts unpaused — unpause must fail
     assert!(
-        client.try_unpause(&owner, &SorobanString::from_str(&env, "no-op")).is_err(),
+        client
+            .try_unpause(&owner, &SorobanString::from_str(&env, "no-op"))
+            .is_err(),
         "unpausing an already-unpaused contract must fail (NotPaused)"
     );
     assert!(!client.is_paused());
@@ -368,7 +374,11 @@ fn tipping_repeated_pause_unpause_cycles_preserve_tips() {
     // Cycle 1
     client.pause(&owner, &SorobanString::from_str(&env, "c1-pause"));
     assert!(client.is_paused());
-    assert_eq!(client.get_tips(&recipient), 10, "tips must be readable while paused");
+    assert_eq!(
+        client.get_tips(&recipient),
+        10,
+        "tips must be readable while paused"
+    );
     client.unpause(&owner, &SorobanString::from_str(&env, "c1-unpause"));
 
     // Tip after cycle 1
@@ -378,8 +388,7 @@ fn tipping_repeated_pause_unpause_cycles_preserve_tips() {
     // Cycle 2
     client.pause(&owner, &SorobanString::from_str(&env, "c2-pause"));
     assert!(
-        client.try_send_tip(&sender, &recipient, &1i128)
-            == Err(Ok(TippingError::ContractPaused)),
+        client.try_send_tip(&sender, &recipient, &1i128) == Err(Ok(TippingError::ContractPaused)),
         "tipping: must fail with ContractPaused during second pause"
     );
     client.unpause(&owner, &SorobanString::from_str(&env, "c2-unpause"));
@@ -401,7 +410,10 @@ fn tipping_double_pause_is_idempotent() {
 
     // Tipping contract treats pause as idempotent — calling again succeeds
     client.pause(&owner, &SorobanString::from_str(&env, "second"));
-    assert!(client.is_paused(), "contract remains paused after double-pause");
+    assert!(
+        client.is_paused(),
+        "contract remains paused after double-pause"
+    );
 }
 
 #[test]
@@ -413,7 +425,10 @@ fn tipping_double_unpause_is_idempotent() {
 
     // Already unpaused — tipping contract treats unpause as idempotent
     client.unpause(&owner, &SorobanString::from_str(&env, "noop"));
-    assert!(!client.is_paused(), "contract remains unpaused after double-unpause");
+    assert!(
+        !client.is_paused(),
+        "contract remains unpaused after double-unpause"
+    );
 }
 
 #[test]
@@ -438,7 +453,9 @@ fn registry_repeated_pause_unpause_cycles_via_governance() {
     client.gov_approve(&admin, &p1);
     client.gov_execute(&admin, &p1);
     assert!(
-        client.try_create_confession(&author, &BytesN::from_array(&env, &[0x22; 32]), &200u64).is_err(),
+        client
+            .try_create_confession(&author, &BytesN::from_array(&env, &[0x22; 32]), &200u64)
+            .is_err(),
         "cycle 1: writes blocked"
     );
     assert_eq!(client.get_total_count(), 1, "read-only works while paused");
@@ -457,7 +474,9 @@ fn registry_repeated_pause_unpause_cycles_via_governance() {
     client.gov_approve(&admin, &p2);
     client.gov_execute(&admin, &p2);
     assert!(
-        client.try_create_confession(&author, &BytesN::from_array(&env, &[0x44; 32]), &400u64).is_err(),
+        client
+            .try_create_confession(&author, &BytesN::from_array(&env, &[0x44; 32]), &400u64)
+            .is_err(),
         "cycle 2: writes blocked"
     );
 
@@ -491,13 +510,18 @@ fn reputation_badges_repeated_toggle_preserves_badges() {
     // Cycle 1
     client.pause(&SorobanString::from_str(&env, "c1"));
     assert!(client.is_paused());
-    assert!(client.has_badge(&user, &BadgeType::ConfessionStarter), "badge readable while paused");
+    assert!(
+        client.has_badge(&user, &BadgeType::ConfessionStarter),
+        "badge readable while paused"
+    );
     client.unpause(&SorobanString::from_str(&env, "c1-end"));
 
     // Cycle 2
     client.pause(&SorobanString::from_str(&env, "c2"));
     assert!(
-        client.try_award_badge(&user, &BadgeType::PopularVoice).is_err(),
+        client
+            .try_award_badge(&user, &BadgeType::PopularVoice)
+            .is_err(),
         "award blocked during second pause"
     );
     client.unpause(&SorobanString::from_str(&env, "c2-end"));

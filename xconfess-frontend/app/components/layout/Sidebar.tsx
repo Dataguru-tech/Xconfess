@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { X, LogOut, User, MessageSquare, Home, Search, BarChart3, Anchor, Keyboard } from "lucide-react";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useFocusTrap } from "@/app/lib/hooks/useFocusTrap";
 import { Modal } from "@/app/components/ui/modal";
+import { Button } from "@/app/components/ui/button";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -197,7 +198,7 @@ function KeyboardShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =
         <ShortcutRow keys={["c"]}>Open comment box (detail)</ShortcutRow>
         <ShortcutRow keys={["n"]}>New confession — focus composer</ShortcutRow>
         <ShortcutRow keys={["/"]}>Focus search</ShortcutRow>
-        <ShortcutRow keys={["g", "h"]} or={["g", "p"]} or={["g", "s"]}>Go Home / Profile / Settings</ShortcutRow>
+        <ShortcutRow keys={["g", "h"]} alternatives={[["g", "p"], ["g", "s"]]}>Go Home / Profile / Settings</ShortcutRow>
         <ShortcutRow keys={["?"]}>Open this shortcuts help</ShortcutRow>
         <ShortcutRow keys={["Esc"]}>Close modals / help</ShortcutRow>
       </div>
@@ -208,7 +209,7 @@ function KeyboardShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =
   );
 }
 
-function ShortcutRow({ keys, or, children }: { keys: string[]; or?: string[]; children: React.ReactNode }) {
+function ShortcutRow({ keys, alternatives = [], children }: { keys: string[]; alternatives?: string[][]; children: React.ReactNode }) {
   const formatKeys = (k: string[]) => k.map((key, i) => (
     <React.Fragment key={key}>
       {i > 0 && <span className="mx-1 text-zinc-500">then</span>}
@@ -221,12 +222,12 @@ function ShortcutRow({ keys, or, children }: { keys: string[]; or?: string[]; ch
       <div className="text-sm text-zinc-300">{children}</div>
       <div className="flex items-center shrink-0 text-xs text-zinc-400">
         {formatKeys(keys)}
-        {or && (
-          <>
+        {alternatives.map((alternative) => (
+          <React.Fragment key={alternative.join("-")}>
             <span className="mx-1 text-zinc-500">or</span>
-            {formatKeys(or)}
-          </>
-        )}
+            {formatKeys(alternative)}
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );
