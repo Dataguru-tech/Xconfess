@@ -85,8 +85,8 @@ MAIL_PASSWORD=your-smtp-password
 Required frontend variables:
 
 ```env
-BACKEND_API_URL=https://your-backend-domain
-NEXT_PUBLIC_API_URL=https://your-backend-domain
+BACKEND_API_URL=https://your-backend-domain/api
+NEXT_PUBLIC_API_URL=https://your-backend-domain/api
 NEXT_PUBLIC_WS_URL=wss://your-backend-domain
 NEXT_PUBLIC_APP_URL=https://your-frontend-domain
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
@@ -115,8 +115,8 @@ Build frontend:
 
 ```powershell
 docker build -f Dockerfile.frontend -t xconfess-frontend `
-  --build-arg BACKEND_API_URL=https://your-backend-domain `
-  --build-arg NEXT_PUBLIC_API_URL=https://your-backend-domain `
+  --build-arg BACKEND_API_URL=https://your-backend-domain/api `
+  --build-arg NEXT_PUBLIC_API_URL=https://your-backend-domain/api `
   --build-arg NEXT_PUBLIC_WS_URL=wss://your-backend-domain `
   --build-arg NEXT_PUBLIC_APP_URL=https://your-frontend-domain .
 ```

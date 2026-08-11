@@ -3,15 +3,16 @@ import { createApiErrorResponse } from "@/lib/apiErrorHandler";
 import { getApiBaseUrl } from "@/app/lib/config";
 
 const BASE_API_URL = getApiBaseUrl();
+type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: RouteContext,
 ) {
   const correlationId = req.headers.get("X-Correlation-ID") || "unknown";
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const backendUrl = `${BASE_API_URL}/users/${id}/public-profile`;
 
     const response = await fetch(backendUrl, {

@@ -3,12 +3,13 @@ import { internalProxyErrorResponse } from "@/app/lib/utils/proxyError";
 import { getApiBaseUrl } from "@/app/lib/config";
 
 const BASE_API_URL = getApiBaseUrl();
+type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: RouteContext,
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   // ── Proxy-layer auth ────────────────────────────────────────────────────────
   const sessionUserId = getSessionUserId(req);

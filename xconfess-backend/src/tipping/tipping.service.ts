@@ -174,6 +174,37 @@ export class TippingService {
 
     // ── 2. Derive idempotency key ────────────────────────────────────────
     const idempotencyKey = this.generateIdempotencyKey(confessionId, dto.txId);
+    const existingByIdempotencyKey =
+      await this.findTipByIdempotencyKey(idempotencyKey);
+    if (existingByIdempotencyKey) {
+      if (
+        existingByIdempotencyKey.confessionId === confessionId &&
+        existingByIdempotencyKey.txId === dto.txId
+      ) {
+        this.logger.debug({
+          message: 'Idempotent replay detected',
+          requestId,
+          confessionId,
+          txHash: dto.txId,
+          tipId: existingByIdempotencyKey.id,
+          status: existingByIdempotencyKey.verificationStatus,
+        });
+        return {
+          tip: existingByIdempotencyKey,
+          isNew: false,
+          isIdempotent: true,
+        };
+      }
+
+      this.logger.warn({
+        message: 'Idempotency key lookup returned a row that does not match the request payload',
+        requestId,
+        confessionId,
+        txHash: dto.txId,
+        tipId: existingByIdempotencyKey.id,
+        originalConfessionId: existingByIdempotencyKey.confessionId,
+      });
+    }
 
     // ── 3. Atomic sentinel INSERT — the single-credit gate ───────────────
     //
@@ -189,9 +220,7 @@ export class TippingService {
     if (!isFirstWriter) {
       // Another request already settled (or is settling) this (confession, tx).
       // Re-read the latest state to return the canonical response.
-      const canonical = await this.tipRepository.findOne({
-        where: { idempotencyKey },
-      });
+      const canonical = await this.findTipByIdempotencyKey(idempotencyKey);
 
       if (!canonical) {
         // Extremely unlikely — row was deleted between our INSERT failure and
@@ -462,6 +491,12 @@ export class TippingService {
       .createHash('sha256')
       .update(`${confessionId}:${txHash}`)
       .digest('hex');
+  }
+
+  private async findTipByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<Tip | null> {
+    return this.tipRepository.findOne({ where: { idempotencyKey } });
   }
 
   /**

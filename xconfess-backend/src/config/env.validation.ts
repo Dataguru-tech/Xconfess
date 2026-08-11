@@ -99,9 +99,27 @@ export const envValidationSchema = Joi.object({
     .uri()
     .default('https://soroban-rpc-testnet.stellar.org'),
   DEPLOYMENT_METADATA_PATH: Joi.string().optional(),
-  CONFESSION_ANCHOR_CONTRACT_ID: Joi.string().optional(),
-  REPUTATION_BADGES_CONTRACT_ID: Joi.string().optional(),
-  TIPPING_SYSTEM_CONTRACT_ID: Joi.string().optional(),
+  CONFESSION_ANCHOR_CONTRACT_ID: Joi.string().when(
+    'STELLAR_FEATURES_ENABLED',
+    {
+      is: 'true',
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    },
+  ),
+  REPUTATION_BADGES_CONTRACT_ID: Joi.string().when(
+    'STELLAR_FEATURES_ENABLED',
+    {
+      is: 'true',
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    },
+  ),
+  TIPPING_SYSTEM_CONTRACT_ID: Joi.string().when('STELLAR_FEATURES_ENABLED', {
+    is: 'true',
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
   STELLAR_SERVER_SECRET: Joi.string().optional(),
 
   // â”€â”€ Tipping SLA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -168,14 +168,14 @@ describe('SearchDiscoveryService', () => {
       const callArgs1 = mockManager.query.mock.calls[0];
       expect(callArgs1[1]).toContain(1); // last parameter should be clamped limit
 
-      mockManager.query.mock.clearAllMocks();
+      mockManager.query.mockClear();
 
       // Test with huge limit — should clamp to 100
       await service.executeFullTextSearch(1, { q: 'test', limit: 999 } as any);
       const callArgs2 = mockManager.query.mock.calls[0];
       expect(callArgs2[1]).toContain(100); // last parameter should be clamped limit
 
-      mockManager.query.mock.clearAllMocks();
+      mockManager.query.mockClear();
 
       // Test with valid limit — should pass through
       await service.executeFullTextSearch(1, { q: 'test', limit: 50 } as any);

@@ -76,7 +76,6 @@ async function seed() {
         `Found ${existingSeedUsers} existing seed users. Database already seeded — skipping.`,
       );
       await queryRunner.rollbackTransaction();
-      await dataSource.destroy();
       return;
     }
 
@@ -218,21 +217,31 @@ async function seed() {
 
     // ── 5. Create Reactions ────────────────────────────────────────────────
     const emojis = ["❤️", "😂", "😢", "🔥", "👍", "👏", "🤔", "💯"];
+    const usedReactionPairs = new Set<string>();
     for (let i = 0; i < REACTIONS_COUNT; i++) {
       const reactionId = crypto.randomUUID();
       const confessionId = confessionIds[i % confessionIds.length];
+      const anonUserId = anonUserIds[Math.floor(i / confessionIds.length) % anonUserIds.length];
+      const reactionPair = `${confessionId}:${anonUserId}`;
+
+      if (usedReactionPairs.has(reactionPair)) {
+        continue;
+      }
+      usedReactionPairs.add(reactionPair);
+
       await manager.query(
         `INSERT INTO "reaction" (id, emoji, "confession_id", "anonymous_user_id", created_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT ("confession_id", "anonymous_user_id") DO NOTHING`,
         [
           reactionId,
           emojis[i % emojis.length],
           confessionId,
-          anonUserIds[Math.floor(Math.random() * anonUserIds.length)],
+          anonUserId,
         ],
       );
     }
-    console.log("Created 50 reactions.");
+    console.log(`Created ${usedReactionPairs.size} reactions.`);
 
     // ── 6. Create Comments ─────────────────────────────────────────────────
     const commentTexts = [

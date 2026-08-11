@@ -10,6 +10,11 @@ import { ErrorBoundary } from "@/app/components/common/ErrorBoundary";
 
 import { OnboardingFlow } from "@/app/components/onboarding/OnboardingFlow";
 import { HelpButton } from "@/app/components/onboarding/HelpButton";
+import { NetworkBanner } from "@/app/components/common/NetworkBanner";
+import { WebSocketIndicator } from "@/app/components/common/WebSocketIndicator";
+import { NetworkStatusProvider } from "@/app/lib/providers/NetworkStatusProvider";
+import ShortcutsProvider from "@/app/components/common/ShortcutsProvider";
+import { WalletProvider } from "@/lib/providers/WalletProvider";
 
 export const metadata: Metadata = {
   title: "xConfess - Anonymous Confessions on Stellar",
@@ -18,12 +23,42 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 };
 
-import { NetworkBanner } from "@/app/components/common/NetworkBanner";
-import { WebSocketIndicator } from "@/app/components/common/WebSocketIndicator";
+const registerServiceWorkerScript = `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
+  });
+}
+`;
 
-import { NetworkStatusProvider } from "@/app/lib/providers/NetworkStatusProvider";
-import ShortcutsProvider from "@/app/components/common/ShortcutsProvider";
-import { WalletProvider } from "@/lib/providers/WalletProvider";
+const unregisterServiceWorkerScript = `
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) =>
+      Promise.all(registrations.map((registration) => registration.unregister())),
+    )
+    .then(() => {
+      if ('caches' in window) {
+        return caches
+          .keys()
+          .then((keys) =>
+            Promise.all(
+              keys
+                .filter((key) => key.startsWith('xconfess-'))
+                .map((key) => caches.delete(key)),
+            ),
+          );
+      }
+    })
+    .catch(console.error);
+}
+`;
+
+const serviceWorkerScript =
+  process.env.NODE_ENV === "production"
+    ? registerServiceWorkerScript
+    : unregisterServiceWorkerScript;
 
 export default function RootLayout({
   children,
@@ -40,7 +75,7 @@ export default function RootLayout({
           id="sw-register"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
+            __html: serviceWorkerScript,
           }}
         />
         <ErrorBoundary>

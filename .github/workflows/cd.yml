@@ -77,6 +77,7 @@ jobs:
           [[ -z "${{ secrets.DEPLOY_USER }}" ]] && missing+=("DEPLOY_USER")
           [[ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]] && missing+=("DEPLOY_SSH_KEY")
           [[ -z "${{ secrets.BACKEND_ENV_FILE }}" ]] && missing+=("BACKEND_ENV_FILE")
+          [[ -z "${{ secrets.BACKEND_API_URL }}" ]] && missing+=("BACKEND_API_URL")
           [[ -z "${{ secrets.NEXT_PUBLIC_API_URL }}" ]] && missing+=("NEXT_PUBLIC_API_URL")
 
           if [[ ${#missing[@]} -gt 0 ]]; then
@@ -112,7 +113,7 @@ jobs:
 
       - name: Build frontend
         env:
-          BACKEND_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: npm run build --workspace=xconfess-frontend
 
@@ -177,7 +178,7 @@ jobs:
       - name: Write frontend environment file
         run: |
           cat > xconfess-frontend/.env.production <<EOF
-          BACKEND_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          BACKEND_API_URL=${{ secrets.BACKEND_API_URL }}
           NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
           EOF
 
@@ -225,7 +226,7 @@ jobs:
           echo "Waiting for backend to become ready..."
           for i in $(seq 1 12); do
             status=$(ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-              "curl -sf http://localhost:5000/health || echo 'not-ready'")
+              "curl -sf http://localhost:5000/api/health/ready || echo 'not-ready'")
             if [[ "$status" != "not-ready" ]]; then
               echo "Backend is healthy."
               exit 0

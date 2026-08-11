@@ -352,6 +352,7 @@ describe('ReactionService', () => {
       managerReactionRepo.create.mockReturnValue(reaction);
       managerReactionRepo.save.mockResolvedValue(reaction);
       managerReactionRepo.count.mockResolvedValue(3);
+      reactionRepo.count.mockResolvedValue(3);
 
       await service.createReaction(dto);
 

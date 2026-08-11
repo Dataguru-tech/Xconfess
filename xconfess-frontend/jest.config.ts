@@ -15,6 +15,7 @@ const config = {
   testPathIgnorePatterns: [
     "<rootDir>/node_modules/",
     "<rootDir>/tests/e2e/",
+    "<rootDir>/tests/mobile/",
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",

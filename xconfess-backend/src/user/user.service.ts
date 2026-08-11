@@ -88,6 +88,10 @@ export class UserService {
     if (existing) {
       throw new ConflictException('Email already in use');
     }
+    const existingUsername = await this.findByUsername(username);
+    if (existingUsername) {
+      throw new ConflictException('Username already in use');
+    }
 
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -120,7 +124,10 @@ export class UserService {
         );
       }
       return savedUser;
-    } catch {
+    } catch (error) {
+      if ((error as { code?: string })?.code === '23505') {
+        throw new ConflictException('Email or username already in use');
+      }
       throw new InternalServerErrorException('Failed to create user');
     }
   }

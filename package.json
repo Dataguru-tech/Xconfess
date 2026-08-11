@@ -11,8 +11,10 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=xconfess-backend\" \"npm run dev --workspace=xconfess-frontend\"",
-    "dev:backend": "npm run dev --workspace=xconfess-backend",
+    "dev": "npm run dev:check && concurrently \"npm run dev --workspace=xconfess-backend\" \"npm run dev --workspace=xconfess-frontend\"",
+    "dev:check": "node scripts/check-local-services.js",
+    "dev:services": "docker compose up -d postgres redis",
+    "dev:backend": "npm run dev:check && npm run dev --workspace=xconfess-backend",
     "dev:frontend": "npm run dev --workspace=xconfess-frontend",
     "backend:build": "npm run build --workspace=xconfess-backend",
     "backend:test": "npm run test --workspace=xconfess-backend",
@@ -38,7 +40,7 @@
     "frontend:test:smoke": "npm run test:smoke --workspace=xconfess-frontend",
     "frontend:test:e2e": "npm run test:e2e --workspace=xconfess-frontend",
     "test:e2e": "npm run frontend:test:e2e",
-    "seed": "npx ts-node --project tsconfig.seed.json scripts/seed.ts",
+    "seed": "npx ts-node -r tsconfig-paths/register --project tsconfig.seed.json scripts/seed.ts",
     "frontend:lint": "npm run lint --workspace=xconfess-frontend",
     "frontend:typecheck": "npm run typecheck --workspace=xconfess-frontend",
     "ci:backend": "npm run backend:build && npm run backend:lint && npm run backend:test",
