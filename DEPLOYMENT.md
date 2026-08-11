@@ -82,6 +82,29 @@ MAIL_USER=your-smtp-user
 MAIL_PASSWORD=your-smtp-password
 ```
 
+Staging uses the same shape with staging hosts and isolated staging databases:
+
+```env
+NODE_ENV=production
+APP_ENV=staging
+PORT=5000
+FRONTEND_URL=https://staging.your-frontend-domain
+BACKEND_URL=https://staging.your-backend-domain
+DB_HOST=staging-postgres-host
+DB_PORT=5432
+DB_USERNAME=staging-app-user
+DB_PASSWORD=staging-db-password
+DB_NAME=xconfess_staging
+JWT_SECRET=staging-strong-secret
+APP_SECRET=staging-strong-secret
+CONFESSION_ENCRYPTION_KEY=64-hex-characters
+TYPEORM_SYNCHRONIZE=false
+TYPEORM_MIGRATIONS_RUN=true
+ENABLE_BACKGROUND_JOBS=true
+REDIS_HOST=staging-redis-host
+REDIS_PORT=6379
+```
+
 Required frontend variables:
 
 ```env
@@ -122,6 +145,49 @@ docker build -f Dockerfile.frontend -t xconfess-frontend `
 ```
 
 Start the backend only after Postgres and Redis are reachable. The backend exposes `/api/health/live` for process health and `/api/health/ready` for dependency readiness.
+
+## SSH/PM2 Deployment Order
+
+Deploy backend first, then frontend.
+
+1. Sync `xconfess-backend`.
+2. Write the backend `.env`.
+3. Run `npm ci --omit=dev`.
+4. Restart `xconfess-backend` with PM2.
+5. Verify `http://localhost:5000/api/health/ready` on the server.
+6. Sync `xconfess-frontend`.
+7. Run `npm ci --omit=dev`.
+8. Restart `xconfess-frontend` with PM2.
+
+The CD workflow follows this order and stops before frontend deployment if backend readiness fails.
+
+## Rollback Runbook
+
+Find the last successful deployment:
+
+```powershell
+gh run list --workflow cd.yml --status success --limit 10
+```
+
+Roll backend back first by rerunning CD against the previous known-good commit SHA, or by SSHing into the host and restoring the previous `~/xconfess/backend/dist` directory.
+
+```powershell
+gh workflow run cd.yml --ref <previous-good-sha> -f environment=production -f run_build=true
+```
+
+After the backend is restored, verify readiness:
+
+```powershell
+ssh <deploy-user>@<deploy-host> "curl -sf http://localhost:5000/api/health/ready"
+```
+
+Then roll frontend back to the matching commit or restore the previous `~/xconfess/frontend/.next` directory. Smoke check public routes after PM2 reload:
+
+```powershell
+Invoke-WebRequest -Uri https://your-frontend-domain -UseBasicParsing
+Invoke-WebRequest -Uri https://your-frontend-domain/login -UseBasicParsing
+Invoke-WebRequest -Uri https://your-frontend-domain/register -UseBasicParsing
+```
 
 ## CI/CD Gates
 

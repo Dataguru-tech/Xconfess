@@ -17,10 +17,17 @@ import ShortcutsProvider from "@/app/components/common/ShortcutsProvider";
 import { WalletProvider } from "@/lib/providers/WalletProvider";
 
 export const metadata: Metadata = {
-  title: "xConfess - Anonymous Confessions on Stellar",
-  description: "Share your thoughts anonymously with blockchain verification",
-  generator: "v0.app",
+  title: "xConfess - Anonymous Confessions",
+  description: "A private, premium space for anonymous expression.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/branding/favicon.ico" },
+      { url: "/branding/xconfess-icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/branding/favicon.ico",
+    apple: "/branding/xconfess-icon.svg",
+  },
 };
 
 const registerServiceWorkerScript = `
@@ -69,6 +76,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#5B2EFF" />
       </head>
       <body className="antialiased">
         <Script

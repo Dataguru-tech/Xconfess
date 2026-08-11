@@ -37,4 +37,7 @@
     '^@faker-js/faker$': '<rootDir>/test/utils/faker-stub.ts',
     '^@faker-js/faker/\\.$': '<rootDir>/test/utils/faker-stub.ts',
   },
+  // Some specs intentionally exercise queues, sockets, and failed transports.
+  // Disable Jest's one-second open-handle warning while the suite tears down.
+  openHandlesTimeout: 0,
 };

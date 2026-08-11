@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npx jest --no-coverage --runInBand",
     "test:e2e": "npx playwright test",
-    "test:smoke": "npx playwright test tests/e2e/public-pages-smoke.spec.ts --project=smoke",
+    "test:smoke": "npx playwright test --project=smoke",
     "generate-api": "npx tsx scripts/generate-openapi-client.ts",
     "typecheck:api": "npx tsx -e \"require('./app/lib/api/generated/types.ts')\" 2>/dev/null || echo 'Generated API types not found. Run generate-api first.'"
   },

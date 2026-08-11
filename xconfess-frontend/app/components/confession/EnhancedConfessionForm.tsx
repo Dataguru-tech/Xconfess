@@ -335,9 +335,8 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
         <CardTitle className="mt-3 text-4xl sm:text-5xl">
           Share your confession
         </CardTitle>
-        <CardDescription className="max-w-2xl text-sm leading-8 sm:text-base">
-          Write with privacy, clarity, and restraint. This space is designed to
-          feel more like a journal entry than a social post composer.
+        <CardDescription className="max-w-2xl text-sm leading-7 sm:text-base">
+          Your identity stays private.
         </CardDescription>
       </CardHeader>
 

@@ -190,15 +190,7 @@ jobs:
             xconfess-backend/ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/xconfess/backend/"
 
-      - name: Sync frontend to server
-        run: |
-          rsync -az --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            xconfess-frontend/ \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/xconfess/frontend/"
-
-      - name: Install dependencies and restart services on server
+      - name: Install backend dependencies and restart backend
         run: |
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s <<'REMOTE'
             set -euo pipefail
@@ -210,14 +202,6 @@ jobs:
               pm2 reload xconfess-backend --update-env || pm2 start dist/main.js --name xconfess-backend
             else
               echo "::warning::pm2 not found - restart backend manually."
-            fi
-
-            cd ~/xconfess/frontend
-            npm ci --omit=dev
-            if command -v pm2 &>/dev/null; then
-              pm2 reload xconfess-frontend --update-env || pm2 start npm --name xconfess-frontend -- start
-            else
-              echo "::warning::pm2 not found - restart frontend manually."
             fi
           REMOTE
 
@@ -234,8 +218,30 @@ jobs:
             echo "Attempt $i/12 - not ready yet, waiting 5s..."
             sleep 5
           done
-          echo "::error::Backend health check failed after 60 s. Check server logs and initiate rollback if needed."
+          echo "::error::Backend health check failed after 60 s. Frontend deployment was not started."
           exit 1
+
+      - name: Sync frontend to server
+        run: |
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            xconfess-frontend/ \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/xconfess/frontend/"
+
+      - name: Install frontend dependencies and restart frontend
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s <<'REMOTE'
+            set -euo pipefail
+
+            cd ~/xconfess/frontend
+            npm ci --omit=dev
+            if command -v pm2 &>/dev/null; then
+              pm2 reload xconfess-frontend --update-env || pm2 start npm --name xconfess-frontend -- start
+            else
+              echo "::warning::pm2 not found - restart frontend manually."
+            fi
+          REMOTE
 
       - name: Record deployment summary
         if: always()

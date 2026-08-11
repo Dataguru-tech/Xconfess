@@ -98,7 +98,7 @@ export const ConfessionCard = memo(({ confession }: Props) => {
               {authorName}
             </p>
             <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--secondary)]">
-              Community post
+              Confession
             </p>
           </div>
         </div>
@@ -130,7 +130,7 @@ export const ConfessionCard = memo(({ confession }: Props) => {
         aria-label={`Read full confession: ${confession.content.slice(0, 80)}...`}
       >
         <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--primary-deep)]">
-          Confession
+          Anonymous
         </p>
         <p className="mb-5 font-editorial text-[1.65rem] leading-[1.5] text-[var(--foreground)] transition-colors group-hover:text-black">
           {confession.content}

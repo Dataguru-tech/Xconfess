@@ -116,15 +116,13 @@ export const ConfessionFeed = () => {
           No confessions yet.
         </p>
         <p className="mx-auto mb-4 max-w-xl text-sm leading-7 text-[var(--secondary)]">
-          Be the first to set the tone for the community - share something
-          thoughtful, kind, and true. Your first post helps others understand
-          what belongs here.
+          Be the first to share.
         </p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
             onClick={scrollToComposer}
-            className="rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-deep))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_18px_40px_-22px_rgba(143,109,60,0.85)] transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="rounded-full bg-[var(--brand-gradient)] px-5 py-2.5 text-sm font-medium text-white shadow-[0_18px_42px_-22px_rgba(91,46,255,0.58)] transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             Begin writing
           </button>
@@ -203,7 +201,7 @@ export const ConfessionFeed = () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            Loading more confessions...
+            Loading more...
           </div>
         )}
         {!hasNextPage && allConfessions.length > 0 && (
@@ -238,12 +236,12 @@ export const ConfessionFeed = () => {
             </div>
             <div>
               <p className="text-xs font-semibold text-white">
-                Metrics Inspector
+                Compare
               </p>
               <p className="text-[11px] text-zinc-400" aria-live="polite">
                 {selectedIds.length === 1
-                  ? "Select one more to unlock side-by-side view"
-                  : `${selectedIds.length} confessions queued for metrics analysis`}
+                  ? "Select one more"
+                  : `${selectedIds.length} selected`}
               </p>
             </div>
           </div>

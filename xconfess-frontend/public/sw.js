@@ -1,7 +1,7 @@
 /* xConfess service worker - offline shell + write queue */
 
-const SHELL_CACHE = 'xconfess-shell-v2';
-const API_CACHE = 'xconfess-api-v2';
+const SHELL_CACHE = 'xconfess-shell-v3';
+const API_CACHE = 'xconfess-api-v3';
 const SYNC_DB_NAME = 'xconfess-sync';
 const SYNC_STORE = 'pending-writes';
 
@@ -46,6 +46,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  if (url.origin === location.origin && url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).catch(() => Response.error()),
+    );
+    return;
+  }
 
   if (
     request.method !== 'GET' ||
@@ -93,7 +100,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(fetch(request));
+  event.respondWith(
+    fetch(request).catch(() => caches.match(request).then((cached) => cached ?? Response.error())),
+  );
 });
 
 self.addEventListener('sync', (event) => {

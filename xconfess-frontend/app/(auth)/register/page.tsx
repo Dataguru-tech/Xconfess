@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
+import { BrandLogo } from '@/app/components/brand/BrandLogo';
 import { useAuth } from '@/app/lib/hooks/useAuth';
 import { getErrorMessage } from '@/app/lib/utils/errorHandler';
 import {
@@ -97,13 +98,14 @@ export default function RegisterPage() {
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
         <div className="grid w-full gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div className="space-y-5">
+            <BrandLogo priority imageClassName="w-[168px] dark:hidden" />
+            <BrandLogo priority tone="light" imageClassName="hidden w-[168px] dark:block" />
             <p className="eyebrow">Join privately</p>
             <h1 className="font-editorial text-5xl leading-[0.96] text-[var(--foreground)] sm:text-6xl">
-              Create a secure space for anonymous expression.
+              Create your account.
             </h1>
             <p className="max-w-md text-base leading-8 text-[var(--secondary)]">
-              Start with an account, then post and manage anonymous sessions with
-              privacy controls built into the experience.
+              Post anonymously. Stay in control.
             </p>
             <div className="flex flex-wrap gap-3 text-sm text-[var(--secondary)]">
               <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2">
