@@ -257,17 +257,14 @@ xConfess participates in Stellar Wave. Check the open issues for work tagged `St
 
 Before opening a PR, read the [small PR policy](docs/SMALL_PR_POLICY.md). Keep each PR focused on one issue, include tests for code changes, and screenshots for UI changes.
 
-When your PR is ready for review, use the [Ready for Review comment template](docs/WAVE_5_READY_FOR_REVIEW_TEMPLATE.md) to signal maintainers.
+When your PR is ready for review, include a concise summary, validation results, screenshots for UI changes, and any known limitations.
 
 When reporting bugs, see [Attaching Logs to Issues and PRs](docs/LOG_ATTACHING_GUIDE.md) for redaction guidelines.
-
-## GrantFox Campaign
-
-xConfess participates in the GrantFox Official Campaign. All related pull requests must include the labels `GrantFox OSS`, `Official Campaign`, and `Maybe Rewarded`. Ensure you link your PR to its corresponding issue using `Closes #ISSUE_NUMBER`. For more details, refer to the contributor guide gf-09 (link to be added once published).
 
 ## Documentation
 
 - [Account Recovery Guide](docs/account-recovery.md) — What to do if you connect the wrong wallet or network
+- [Contributor Guide](docs/CONTRIBUTOR_GUIDE.md) — Local setup, branch hygiene, PR expectations, and validation commands
 
 ## Package Docs
 - `xconfess-backend/README.md`

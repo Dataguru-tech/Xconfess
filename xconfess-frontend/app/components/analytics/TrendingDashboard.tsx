@@ -373,7 +373,7 @@ export const TrendingDashboard = () => {
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">
                 Try a different time period, refresh the dashboard, or seed demo
-                data before a GrantFox walkthrough.
+                data before a product walkthrough.
               </p>
               <button
                 type="button"
