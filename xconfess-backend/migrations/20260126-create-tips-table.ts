@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner, Table, TableColumn, TableForeignKey, TableIndex } from "typeorm";
 
-export class CreateTipsTable1737926400000 implements MigrationInterface {
-    name = 'CreateTipsTable1737926400000'
+export class CreateTipsTable20260126 implements MigrationInterface {
+    name = 'CreateTipsTable20260126'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.createTable(

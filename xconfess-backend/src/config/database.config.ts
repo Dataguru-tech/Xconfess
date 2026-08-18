@@ -76,7 +76,10 @@ export const getTypeOrmConfig = (
     },
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
 
-    migrations: [__dirname + '/../../migrations/[0-9]*{.ts,.js}'],
+    migrations: [
+      __dirname + '/../../migrations/[0-9]*{.ts,.js}',
+      __dirname + '/../migrations/[0-9]*{.ts,.js}',
+    ],
     migrationsRun,
 
     synchronize,

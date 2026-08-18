@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class AddStellarAnchoringFields1737763200000 implements MigrationInterface {
-    name = 'AddStellarAnchoringFields1737763200000'
+export class AddStellarAnchoringFields20250125 implements MigrationInterface {
+    name = 'AddStellarAnchoringFields20250125'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "anonymous_confessions" ADD "stellar_tx_hash" varchar(128)`);
