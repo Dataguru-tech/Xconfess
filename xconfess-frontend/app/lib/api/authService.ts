@@ -20,6 +20,8 @@ import {
 } from '@/lib/normalizeAuthError';
 import { getApiBaseUrl } from '@/app/lib/config';
 
+export type AuthFieldError = 'email' | 'username' | 'password' | 'confirmPassword';
+
 /**
  * Axios instance for proxy API calls.
  * baseURL is set to the Next.js origin so that all paths are relative to /api/*.
@@ -146,9 +148,11 @@ export const authApi = {
         const body = await response.json().catch(() => ({}));
         const message =
           (body as any)?.message ?? `Registration failed (${response.status})`;
-        throw new AppError(message, 'REGISTER_FAILED', response.status, {
+        const field = extractAuthFieldError(body);
+        throw new AppError(message, (body as any)?.code ?? 'REGISTER_FAILED', response.status, {
           responseBody: body,
           path: '/api/users/register',
+          field,
         });
       }
 
@@ -236,6 +240,30 @@ function isNormalizedAuthError(body: any): body is NormalizedAuthError {
     'message' in body &&
     'retryable' in body &&
     (body.type === 'TRANSIENT' || body.type === 'TERMINAL')
+  );
+}
+
+export function getAuthFieldError(error: unknown): AuthFieldError | undefined {
+  if (!(error instanceof AppError)) return undefined;
+  return extractAuthFieldError(error.details?.responseBody) ?? extractAuthFieldError(error.details);
+}
+
+function extractAuthFieldError(body: unknown): AuthFieldError | undefined {
+  if (!body || typeof body !== 'object') return undefined;
+
+  const details = 'details' in body ? (body as { details?: unknown }).details : body;
+  if (!details || typeof details !== 'object') return undefined;
+
+  const field = (details as { field?: unknown }).field;
+  return isAuthFieldError(field) ? field : undefined;
+}
+
+function isAuthFieldError(field: unknown): field is AuthFieldError {
+  return (
+    field === 'email' ||
+    field === 'username' ||
+    field === 'password' ||
+    field === 'confirmPassword'
   );
 }
 
