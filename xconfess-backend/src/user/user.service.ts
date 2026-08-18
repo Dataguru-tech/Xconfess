@@ -2,10 +2,10 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  ConflictException,
   NotFoundException,
   Logger,
   forwardRef,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,6 +25,8 @@ import {
 } from './dto/user-activity.dto';
 import { decryptConfession } from '../utils/confession-encryption';
 import { ConfigService } from '@nestjs/config';
+import { AppException } from '../common/errors/app-exception';
+import { ErrorCode } from '../common/errors/error-codes';
 
 @Injectable()
 export class UserService {
@@ -86,11 +88,21 @@ export class UserService {
     const normalizedEmail = email.trim().toLowerCase();
     const existing = await this.findByEmail(normalizedEmail);
     if (existing) {
-      throw new ConflictException('Email already in use');
+      throw new AppException(
+        'An account with this email already exists.',
+        ErrorCode.ALREADY_EXISTS,
+        HttpStatus.CONFLICT,
+        { field: 'email' },
+      );
     }
     const existingUsername = await this.findByUsername(username);
     if (existingUsername) {
-      throw new ConflictException('Username already in use');
+      throw new AppException(
+        'This username is already taken.',
+        ErrorCode.ALREADY_EXISTS,
+        HttpStatus.CONFLICT,
+        { field: 'username' },
+      );
     }
 
     try {
@@ -125,8 +137,15 @@ export class UserService {
       }
       return savedUser;
     } catch (error) {
+      if (error instanceof AppException) {
+        throw error;
+      }
       if ((error as { code?: string })?.code === '23505') {
-        throw new ConflictException('Email or username already in use');
+        throw new AppException(
+          'Email or username already in use.',
+          ErrorCode.ALREADY_EXISTS,
+          HttpStatus.CONFLICT,
+        );
       }
       throw new InternalServerErrorException('Failed to create user');
     }
