@@ -6,6 +6,7 @@
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from "typeorm";
 import { User } from "src/user/entities/user.entity";
 
@@ -50,9 +51,15 @@ export class Notification {
     messageCount?: number;
     messageIds?: string[];
     commentId?: number;
+    reactionId?: string;
     confessionId?: string;
     mentionedBy?: string;
+    sourceEventId?: string;
   };
+
+  @Column({ nullable: true })
+  @Index({ unique: true })
+  sourceKey: string | null;
 
   @Column({ default: false })
   isRead: boolean;
