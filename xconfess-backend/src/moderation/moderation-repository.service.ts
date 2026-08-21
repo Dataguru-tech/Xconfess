@@ -6,7 +6,10 @@ import { ModerationLog } from './entities/moderation-log.entity';
 import { ModerationResult, ModerationStatus } from './ai-moderation.service';
 import { AuditLogService } from 'src/audit-log/audit-log.service';
 import { QueryModerationDto } from './dtos/query-moderation.dto';
-import { InvalidModerationTransitionError } from './moderation-state-machine';
+import {
+  assertValidTransition,
+  InvalidModerationTransitionError,
+} from './moderation-state-machine';
 
 @Injectable()
 export class ModerationRepositoryService {
