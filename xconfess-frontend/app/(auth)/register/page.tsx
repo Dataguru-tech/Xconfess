@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { BrandLogo } from '@/app/components/brand/BrandLogo';
@@ -268,6 +268,17 @@ export default function RegisterPage() {
 
             <Button type="submit" disabled={loading} isLoading={loading} className="mt-6 w-full">
               {loading ? 'Creating account...' : 'Create account'}
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => router.push('/login')}
+              disabled={loading}
+              variant="outline"
+              className="mt-3 w-full"
+            >
+              <LogIn className="h-4 w-4" aria-hidden="true" />
+              Sign in
             </Button>
           </form>
         </div>
