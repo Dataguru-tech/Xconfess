@@ -41,7 +41,7 @@ export class OutboxEvent {
   @Column({ type: 'text', nullable: true })
   lastError: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   @Index({ unique: true })
   idempotencyKey: string;
 
@@ -55,7 +55,7 @@ export class OutboxEvent {
   @Column({ type: 'timestamp', nullable: true })
   processedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   @Index()
   claimedBy: string;
 

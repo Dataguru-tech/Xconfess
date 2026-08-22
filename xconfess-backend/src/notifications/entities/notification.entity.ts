@@ -57,7 +57,7 @@ export class Notification {
     sourceEventId?: string;
   };
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @Index({ unique: true })
   sourceKey: string | null;
 

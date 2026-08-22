@@ -41,7 +41,7 @@ export class NotificationPreference {
   @Column({ default: true })
   emailMessageBatch: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   emailAddress: string;
 
   // Batching settings

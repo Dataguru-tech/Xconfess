@@ -41,7 +41,7 @@ export class ModerationComment {
   @Column({ type: 'timestamp', nullable: true })
   moderatedAt?: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   moderatedById?: number;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
