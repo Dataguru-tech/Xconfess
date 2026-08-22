@@ -1,6 +1,7 @@
 // src/config/typeorm.config.ts
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import * as path from 'path';
 
 const TRUE_VALUES = new Set(['true', '1', 'yes', 'on']);
 
@@ -18,6 +19,8 @@ export const getTypeOrmConfig = (
   const loggingSetting = (
     configService.get<string>('TYPEORM_LOGGING') || ''
   ).toLowerCase();
+  const isCompiledRuntime = __dirname.includes(`${path.sep}dist${path.sep}`);
+  const migrationExtension = isCompiledRuntime ? 'js' : 'ts';
 
   const isLocalDevEnv =
     nodeEnv === 'development' ||
@@ -77,8 +80,8 @@ export const getTypeOrmConfig = (
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
 
     migrations: [
-      __dirname + '/../../migrations/[0-9]*{.ts,.js}',
-      __dirname + '/../migrations/[0-9]*{.ts,.js}',
+      __dirname + `/../../migrations/[0-9]*.${migrationExtension}`,
+      __dirname + `/../migrations/[0-9]*.${migrationExtension}`,
     ],
     migrationsRun,
 
