@@ -1,36 +1,19 @@
 import { createApiErrorResponse } from "@/lib/apiErrorHandler";
-import { getApiBaseUrl } from "@/app/lib/config";
+import { methodNotAllowed, resolveBackendRoute } from "@/app/lib/api/proxy";
 
 export async function POST(request: Request) {
-  const correlationId = request.headers.get("X-Correlation-ID") || "unknown";
+  let correlationId = request.headers.get("X-Request-ID") || request.headers.get("X-Correlation-ID") || "unknown";
 
   try {
     const body = await request.json();
-    const baseApiUrl = getApiBaseUrl();
-    const requestUrl = new URL(request.url);
-    const backendApiUrl = new URL(baseApiUrl);
+    const backend = resolveBackendRoute(request, "/users/register");
+    correlationId = backend.requestId;
 
-    if (backendApiUrl.host === requestUrl.host) {
-      return createApiErrorResponse(
-        {
-          message:
-            "Server misconfiguration: BACKEND_API_URL points to the frontend instead of the Render backend.",
-          code: "BACKEND_API_URL_SELF_REFERENCE",
-        },
-        {
-          status: 503,
-          correlationId,
-          route: "POST /api/users/register",
-        },
-      );
-    }
-
-    const backendUrl = `${baseApiUrl}/users/register`;
-
-    const response = await fetch(backendUrl, {
+    const response = await fetch(backend.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Request-ID": correlationId,
         "X-Correlation-ID": correlationId,
       },
       body: JSON.stringify(body),
@@ -53,6 +36,7 @@ export async function POST(request: Request) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
+        "X-Request-ID": correlationId,
       },
     });
   } catch (error) {
@@ -68,11 +52,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return createApiErrorResponse(
-    {
-      message: "Method GET is not allowed for registration. Use POST.",
-      code: "METHOD_NOT_ALLOWED",
-    },
-    { status: 405, route: "GET /api/users/register" },
-  );
+  return methodNotAllowed("GET", ["POST"]);
 }

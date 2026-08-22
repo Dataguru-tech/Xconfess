@@ -5,9 +5,9 @@ services:
     plan: free
     region: oregon
     branch: main
-    buildCommand: npm ci --include=dev --include=optional --no-audit --no-fund && npm run build --workspace=xconfess-backend
-    startCommand: npm run start:prod --workspace=xconfess-backend
-    healthCheckPath: /api/health/live
+    buildCommand: npm ci --include=dev --include=optional --no-audit --no-fund && npm run deploy:preflight && npm run build --workspace=xconfess-backend
+    startCommand: npm run render:prestart && npm run start:prod --workspace=xconfess-backend
+    healthCheckPath: /api/health/ready
     autoDeploy: true
     envVars:
       - key: NODE_ENV
@@ -21,11 +21,13 @@ services:
       - key: ENABLE_BACKGROUND_JOBS
         value: true
       - key: TYPEORM_SYNCHRONIZE
-        value: true
-      - key: TYPEORM_ALLOW_PRODUCTION_SYNCHRONIZE
-        value: true
-      - key: TYPEORM_MIGRATIONS_RUN
         value: false
+      - key: TYPEORM_ALLOW_PRODUCTION_SYNCHRONIZE
+        value: false
+      - key: TYPEORM_MIGRATIONS_RUN
+        value: true
+      - key: TYPEORM_BASELINE_EXISTING_SCHEMA
+        value: true
       - key: TYPEORM_LOGGING
         value: false
       - key: DB_HOST

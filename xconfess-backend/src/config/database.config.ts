@@ -33,10 +33,14 @@ export const getTypeOrmConfig = (
     appEnv === 'dev' ||
     appEnv === 'local';
 
+  if (!isLocalDevEnv && TRUE_VALUES.has(syncOptIn)) {
+    throw new Error(
+      'TYPEORM_SYNCHRONIZE must be false outside local development. Use migrations for production and staging deploys.',
+    );
+  }
+
   // Conservative default: never sync unless explicitly opted-in in local/dev only.
-  const synchronize =
-    TRUE_VALUES.has(syncOptIn) &&
-    (isLocalDevEnv || TRUE_VALUES.has(productionSyncOptIn));
+  const synchronize = TRUE_VALUES.has(syncOptIn) && isLocalDevEnv;
   const migrationsRun =
     migrationsRunSetting === undefined
       ? !['test', 'ci'].includes(nodeEnv) && !isLocalDevEnv
