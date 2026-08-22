@@ -235,6 +235,41 @@ npm run frontend:build
 npm run contract:build
 ```
 
+### Database Migrations
+
+xConfess manages its Postgres schema through TypeORM migrations. Two directories
+are loaded by the CLI and the app: `xconfess-backend/migrations/` and
+`xconfess-backend/src/migrations/`.
+
+```bash
+# List all migrations and show which have run
+npm run backend:migration:show
+
+# Apply all pending migrations (clean or CI database)
+npm run backend:migration:run
+
+# Repair an existing local dev database without wiping data
+# (adds any missing columns, indexes, and backfills search_vector)
+npm run backend:schema:repair
+```
+
+**When to use each:**
+
+| Situation | Command |
+|-----------|---------|
+| Fresh Postgres container or CI run | `npm run backend:migration:run` |
+| Existing local dev database (may have been created via `synchronize`) | `npm run backend:schema:repair` |
+| Debugging a migration list error | `npm run backend:migration:show` |
+
+After running either migration command, verify the readiness probe returns 200:
+
+```bash
+curl http://localhost:5000/api/health/ready
+```
+
+If the schema is still out of sync, the response body includes `missingColumns`,
+`missingIndexes`, and a `hint` with the exact command to run.
+
 ### Lint
 
 ```bash
