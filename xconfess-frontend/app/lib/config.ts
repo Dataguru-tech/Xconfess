@@ -14,10 +14,12 @@ export const getApiBaseUrl = (): string => {
   if (typeof window === 'undefined') {
     const serverUrl = process.env.BACKEND_API_URL;
     if (!serverUrl) {
-      // During build time or if not provided, use a fallback to prevent crash
-      return normalizeBackendApiUrl(
-        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
-      );
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'BACKEND_API_URL is required for server-side API proxy routes in production.',
+        );
+      }
+      return normalizeBackendApiUrl('http://localhost:5000');
     }
     return normalizeBackendApiUrl(serverUrl);
   }
