@@ -13,6 +13,10 @@ export enum ModerationStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  FLAGGED = 'flagged',
+  ESCALATED = 'escalated',
+  RESOLVED = 'resolved',
+  HIDDEN = 'hidden',
 }
 
 @Entity('moderation_comments')
