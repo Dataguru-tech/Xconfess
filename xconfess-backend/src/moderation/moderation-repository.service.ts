@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ModerationLog } from './entities/moderation-log.entity';
 import { ModerationResult, ModerationStatus } from './ai-moderation.service';
-import { AuditLogService } from 'src/audit-log/audit-log.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { QueryModerationDto } from './dtos/query-moderation.dto';
 import {
   assertValidTransition,
