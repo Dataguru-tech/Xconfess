@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddSoftDeleteColumns20260223 implements MigrationInterface {
-    name = 'AddSoftDeleteColumns20260223';
+export class AddSoftDeleteColumns2026022300000 implements MigrationInterface {
+    name = 'AddSoftDeleteColumns2026022300000';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Add deleted_at column

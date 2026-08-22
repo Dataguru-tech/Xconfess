@@ -13,6 +13,9 @@ export const getTypeOrmConfig = (
   const syncOptIn = (
     configService.get<string>('TYPEORM_SYNCHRONIZE') || ''
   ).toLowerCase();
+  const productionSyncOptIn = (
+    configService.get<string>('TYPEORM_ALLOW_PRODUCTION_SYNCHRONIZE') || ''
+  ).toLowerCase();
   const migrationsRunSetting = configService.get<string>(
     'TYPEORM_MIGRATIONS_RUN',
   );
@@ -31,7 +34,9 @@ export const getTypeOrmConfig = (
     appEnv === 'local';
 
   // Conservative default: never sync unless explicitly opted-in in local/dev only.
-  const synchronize = isLocalDevEnv && TRUE_VALUES.has(syncOptIn);
+  const synchronize =
+    TRUE_VALUES.has(syncOptIn) &&
+    (isLocalDevEnv || TRUE_VALUES.has(productionSyncOptIn));
   const migrationsRun =
     migrationsRunSetting === undefined
       ? !['test', 'ci'].includes(nodeEnv) && !isLocalDevEnv

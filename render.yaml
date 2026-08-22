@@ -21,9 +21,11 @@ services:
       - key: ENABLE_BACKGROUND_JOBS
         value: true
       - key: TYPEORM_SYNCHRONIZE
-        value: false
-      - key: TYPEORM_MIGRATIONS_RUN
         value: true
+      - key: TYPEORM_ALLOW_PRODUCTION_SYNCHRONIZE
+        value: true
+      - key: TYPEORM_MIGRATIONS_RUN
+        value: false
       - key: TYPEORM_LOGGING
         value: false
       - key: DB_HOST
