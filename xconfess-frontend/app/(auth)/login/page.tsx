@@ -96,7 +96,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="luxury-panel rounded-[34px] p-7 sm:p-8">
+          <div className="luxury-panel rounded-2xl p-7 sm:p-8">
             <div className="space-y-3">
               <p className="eyebrow">Account sign in</p>
               <h2 className="font-editorial text-4xl text-[var(--foreground)]">
@@ -108,13 +108,13 @@ export default function LoginPage() {
             </div>
 
             {errors.email && (
-              <div className="mt-5 rounded-[20px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="mt-5 rounded-xl border border-red-500/25 bg-red-950/30 p-3 text-sm text-red-200">
                 {errors.email}
               </div>
             )}
 
             {errors.password && !errors.email && (
-              <div className="mt-5 rounded-[20px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="mt-5 rounded-xl border border-red-500/25 bg-red-950/30 p-3 text-sm text-red-200">
                 {errors.password}
               </div>
             )}
@@ -164,7 +164,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="text-sm text-indigo-600 hover:text-indigo-400">
+              <div className="text-sm text-[var(--primary-deep)] hover:text-[var(--primary)]">
                 <Link href="/forgot-password">Forgot password?</Link>
               </div>
 
@@ -189,10 +189,10 @@ export default function LoginPage() {
               </Button>
 
               {showDevMockAdminLogin && (
-                <div className="rounded-[22px] border border-[var(--accent-border)] bg-[var(--accent-soft)] p-4">
+                <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)] p-4">
                   <p className="mb-3 text-xs leading-6 text-[var(--secondary)]">
                     Dev-only: mock admin shortcut. Enable with{' '}
-                    <code className="rounded bg-white/55 px-1.5 py-0.5 font-mono text-[var(--foreground)]">
+                    <code className="rounded bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[var(--foreground)]">
                       NEXT_PUBLIC_ENABLE_DEV_MOCK_ADMIN_LOGIN=true
                     </code>
                     .
