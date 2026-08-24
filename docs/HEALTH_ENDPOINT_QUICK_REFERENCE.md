@@ -149,6 +149,6 @@ container.
 ## Rate limits
 
 - `/api/health/live`: 120 requests per minute
-- `/api/health/ready`: 30 requests per minute
+- `/api/health/ready`: 120 requests per minute
 
 These limits are intentionally generous for local development. In production, use your load balancer's health check interval (typically 10-30 seconds).

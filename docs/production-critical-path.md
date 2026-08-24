@@ -48,14 +48,14 @@ TYPEORM_MIGRATIONS_RUN=true
 
 `TYPEORM_SYNCHRONIZE=true` is allowed only in local development. The backend now refuses to boot with production sync enabled.
 
-Because the first Render database may have been created by TypeORM synchronize, Render runs `npm run render:prestart` before the backend starts. That script only baselines migrations when all of these are true:
+Because the first Render database may have been created by TypeORM synchronize, Render runs `npm run render:prestart` before the backend starts. That script always makes the `anonymous_confessions` readiness indexes idempotently when the table and required columns already exist. It only baselines migrations when all of these are true:
 
 - `TYPEORM_BASELINE_EXISTING_SCHEMA=true`
 - `TYPEORM_MIGRATIONS_RUN=true`
 - core tables already exist
 - the `migrations` table is empty
 
-Fresh databases skip the baseline and run migrations normally. Existing databases with migration history also skip it.
+Fresh databases skip the baseline and run migrations normally. Existing databases with migration history skip only the baseline; the readiness index repair still runs.
 
 ## Secrets
 
@@ -70,4 +70,4 @@ All-zero development keys are blocked. When `STELLAR_FEATURES_ENABLED=true` in p
 
 ## Free-tier runtime notes
 
-Render free services can cold start slowly. The app uses `/api/health/ready` as the deploy health check so traffic is not routed until Postgres, Redis queues, and schema readiness pass. If background jobs are intentionally disabled, readiness reports them as `disabled`; production should keep `ENABLE_BACKGROUND_JOBS=true`.
+Render free services can cold start slowly. Render uses `/api/health/live` as the deploy health check so a cold start is judged by whether the Node process is listening. Use `/api/health/ready` after deployment to verify Postgres, Redis queues, and schema readiness before treating the release as healthy. If background jobs are intentionally disabled, readiness reports them as `disabled`; production should keep `ENABLE_BACKGROUND_JOBS=true`.
