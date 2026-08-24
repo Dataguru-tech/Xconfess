@@ -86,7 +86,7 @@ export default function RegisterPage() {
         email: parsed.data.email,
         password: parsed.data.password,
       });
-      router.push('/dashboard');
+      router.push(getAuthRedirectTarget('/dashboard'));
     } catch (error) {
       const field = getAuthFieldError(error);
       const message = getErrorMessage(error);
@@ -272,7 +272,7 @@ export default function RegisterPage() {
 
             <Button
               type="button"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push(buildAuthSwitchUrl('/login'))}
               disabled={loading}
               variant="outline"
               className="mt-3 w-full"
@@ -285,6 +285,26 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function getAuthRedirectTarget(fallback: string): string {
+  if (typeof window === 'undefined') return fallback;
+
+  const next = new URLSearchParams(window.location.search).get('next');
+  return isSafeAuthRedirect(next) ? next : fallback;
+}
+
+function buildAuthSwitchUrl(path: '/register' | '/login'): string {
+  if (typeof window === 'undefined') return path;
+
+  const next = new URLSearchParams(window.location.search).get('next');
+  return isSafeAuthRedirect(next)
+    ? `${path}?next=${encodeURIComponent(next)}`
+    : path;
+}
+
+function isSafeAuthRedirect(value: string | null): value is string {
+  return Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 }
 
 function Field({

@@ -38,7 +38,7 @@ export default function LoginPage() {
           mock: true,
         }),
       });
-      router.push('/admin/dashboard');
+      router.push(getAuthRedirectTarget('/admin/dashboard'));
     } catch {
       setErrors({ password: 'Mock login failed' });
     } finally {
@@ -67,7 +67,11 @@ export default function LoginPage() {
         email: parsed.data.email,
         password: parsed.data.password,
       });
-      router.push(user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+      router.push(
+        getAuthRedirectTarget(
+          user.role === 'admin' ? '/admin/dashboard' : '/dashboard',
+        ),
+      );
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Login failed';
       setErrors({ password: message });
@@ -175,7 +179,7 @@ export default function LoginPage() {
 
               <Button
                 type="button"
-                onClick={() => router.push('/register')}
+                onClick={() => router.push(buildAuthSwitchUrl('/register'))}
                 disabled={loading}
                 variant="outline"
                 className="w-full"
@@ -210,4 +214,24 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function getAuthRedirectTarget(fallback: string): string {
+  if (typeof window === 'undefined') return fallback;
+
+  const next = new URLSearchParams(window.location.search).get('next');
+  return isSafeAuthRedirect(next) ? next : fallback;
+}
+
+function buildAuthSwitchUrl(path: '/register' | '/login'): string {
+  if (typeof window === 'undefined') return path;
+
+  const next = new URLSearchParams(window.location.search).get('next');
+  return isSafeAuthRedirect(next)
+    ? `${path}?next=${encodeURIComponent(next)}`
+    : path;
+}
+
+function isSafeAuthRedirect(value: string | null): value is string {
+  return Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
   Card,
@@ -28,6 +29,13 @@ import { Eye, EyeOff, Send, Loader2, CloudDownload } from "lucide-react";
 import { cn } from "@/app/lib/utils/cn";
 import apiClient from "@/app/lib/api/client";
 import { useGlobalToast } from "@/app/components/common/Toast";
+import { useAuth } from "@/app/lib/hooks/useAuth";
+import {
+  buildAuthRedirectUrl,
+  clearPendingConfession,
+  loadPendingConfession,
+  savePendingConfession,
+} from "@/app/lib/utils/pendingConfession";
 
 interface EnhancedConfessionFormProps {
   onSubmit?: (data: ConfessionFormData & { stellarTxHash?: string }) => void;
@@ -91,6 +99,7 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
   onSubmit,
   className,
 }) => {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [gender, setGender] = useState<Gender | undefined>();
@@ -117,9 +126,11 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const restoredPendingRef = useRef(false);
   const { anchor } = useStellarWallet();
   const toast = useGlobalToast();
   const { drafts } = useDrafts();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   const currentValidationErrors = validateConfessionForm({
     title,
@@ -148,6 +159,28 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (restoredPendingRef.current || isAuthLoading || !isAuthenticated) return;
+
+    const pending = loadPendingConfession();
+    if (!pending) return;
+
+    restoredPendingRef.current = true;
+    setTitle(pending.title || "");
+    setBody(pending.body);
+    setGender(pending.gender);
+    setEnableStellarAnchor(Boolean(pending.enableStellarAnchor));
+    setErrors({});
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    setIsPreviewMode(false);
+    toast.info("Your confession draft is restored. Review it, then publish when ready.");
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, [isAuthLoading, isAuthenticated, toast]);
 
   const checkForNewerDrafts = useCallback(async () => {
     try {
@@ -241,6 +274,23 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
       return;
     }
 
+    if (isAuthLoading) {
+      setSubmitError("Checking your session. Please try again in a moment.");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      savePendingConfession({
+        title,
+        body,
+        gender,
+        enableStellarAnchor,
+      });
+      toast.info("Sign in or create an account to publish. Your confession is saved here.");
+      router.push(buildAuthRedirectUrl("/login"));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -286,6 +336,7 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
       setSubmitError(null);
       setStellarTxHash(null);
       setIsPreviewMode(false);
+      clearPendingConfession();
 
       if (submitSuccessTimerRef.current) {
         clearTimeout(submitSuccessTimerRef.current);
@@ -584,6 +635,7 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
                   clearTimeout(submitSuccessTimerRef.current);
                 }
                 resetComposerState();
+                clearPendingConfession();
               }}
               disabled={isSubmitting}
               aria-label="Clear draft and reset form"
