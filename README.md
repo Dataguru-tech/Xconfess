@@ -179,6 +179,16 @@ This starts the backend and frontend concurrently. Once both are ready:
 
 See [Health Endpoint Quick Reference](docs/HEALTH_ENDPOINT_QUICK_REFERENCE.md) for details on liveness vs readiness probes, Kubernetes config examples, and response formats.
 
+> **Render cold start notice:** The production backend is hosted on Render's free tier, which spins down instances after inactivity. The **first request after a period of inactivity may take 50 seconds or more** to respond while the instance wakes up. This is expected behaviour — it is not a broken deploy. To confirm the service is up, poll the health endpoints until you receive a `200`:
+>
+> ```bash
+> # Wait for the backend to wake up
+> curl https://<your-render-host>/api/health/live   # process alive
+> curl https://<your-render-host>/api/health/ready  # all dependencies ready
+> ```
+>
+> See [docs/production-critical-path.md](docs/production-critical-path.md) for more detail on Render cold starts and how to validate a fresh deploy.
+
 ### Common Local Startup Issues
 
 | Symptom | Cause | Fix |
