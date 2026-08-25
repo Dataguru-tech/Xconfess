@@ -13,3 +13,23 @@ describe("service worker static asset handling", () => {
     expect(source).toContain("Response.error()");
   });
 });
+
+describe("development service worker cleanup", () => {
+  const layoutSource = readFileSync(
+    path.join(process.cwd(), "app", "layout.tsx"),
+    "utf8",
+  );
+
+  it("unregisters service workers outside production", () => {
+    expect(layoutSource).toContain("const unregisterServiceWorkerScript");
+    expect(layoutSource).toContain("registration.unregister()");
+    expect(layoutSource).toContain('process.env.NODE_ENV === "production"');
+    expect(layoutSource).toContain(": unregisterServiceWorkerScript");
+  });
+
+  it("clears xconfess caches during dev cleanup", () => {
+    expect(layoutSource).toContain("caches");
+    expect(layoutSource).toContain("key.startsWith('xconfess-')");
+    expect(layoutSource).toContain("caches.delete(key)");
+  });
+});

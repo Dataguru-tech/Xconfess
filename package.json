@@ -12,6 +12,8 @@
   },
   "scripts": {
     "dev": "npm run dev:check && concurrently \"npm run dev --workspace=xconfess-backend\" \"npm run dev --workspace=xconfess-frontend\"",
+    "setup:check": "node scripts/check-node-version.js",
+    "env:bootstrap": "node scripts/bootstrap-env.js",
     "dev:check": "node scripts/check-local-services.js",
     "dev:services": "docker compose up -d postgres redis",
     "dev:backend": "npm run dev:check && npm run dev --workspace=xconfess-backend",
