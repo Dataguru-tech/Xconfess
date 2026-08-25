@@ -47,8 +47,8 @@ For most contributors, this is the fastest path:
 
 ```bash
 npm install
-cp xconfess-backend/.env.example xconfess-backend/.env
-cp xconfess-frontend/.env.example xconfess-frontend/.env.local
+npm run setup:check
+npm run env:bootstrap
 npm run dev:services
 npm run dev:check
 npm run dev
@@ -63,10 +63,19 @@ npm run dev:services
 npm run dev:check
 ```
 
+If PowerShell blocks `npm.ps1` with an execution-policy error, use `npm.cmd` for local commands without changing machine-wide policy:
+
+```powershell
+npm.cmd --version
+npm.cmd install
+npm.cmd run env:bootstrap
+```
+
 ### 1. Install dependencies
 
 ```bash
 npm install
+npm run setup:check
 ```
 
 ### 2. Start infrastructure
@@ -92,7 +101,7 @@ docker compose -f compose.yaml ps
 **Backend** - copy the sample and fill in the values marked `change-me`:
 
 ```bash
-cp xconfess-backend/.env.example xconfess-backend/.env
+npm run env:bootstrap
 ```
 
 Required keys to set before first boot (everything else has safe defaults):

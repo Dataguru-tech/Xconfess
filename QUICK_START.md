@@ -6,7 +6,7 @@ Get the full stack running locally in under 5 minutes.
 
 | Tool | Version | Required for |
 |------|---------|-------------|
-| Node.js | >= 18 | Backend + Frontend |
+| Node.js | 22.x | Backend + Frontend |
 | npm | >= 9 | Root workspace and all JS packages |
 | Docker | any | Postgres + Redis |
 | Rust + cargo | stable | Contracts only — skip if not touching contracts |
@@ -23,6 +23,7 @@ cd Xconfess
 ```bash
 # Root workspace dependencies
 npm install
+npm run setup:check
 ```
 
 ## Step 3 — Start infrastructure (Postgres + Redis)
@@ -40,12 +41,10 @@ If Docker Desktop is closed or still starting, `npm run dev:services` stops befo
 ## Step 4 — Configure environment files
 
 ```bash
-# Backend
-cp xconfess-backend/.env.example xconfess-backend/.env
-
-# Frontend
-cp xconfess-frontend/.env.example xconfess-frontend/.env.local
+npm run env:bootstrap
 ```
+
+On Windows, if PowerShell blocks `npm.ps1`, run the same commands through `npm.cmd`, for example `npm.cmd install` and `npm.cmd run env:bootstrap`.
 
 Minimum backend keys to set in `xconfess-backend/.env`:
 
