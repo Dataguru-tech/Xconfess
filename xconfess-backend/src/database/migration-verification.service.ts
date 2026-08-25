@@ -152,7 +152,7 @@ export class MigrationVerificationService implements OnModuleInit {
     for (const [timestamp, paths] of seenTimestamps) {
       if (paths.length > 1) {
         issues.push(
-          \Duplicate migration timestamp \: \,
+          `Duplicate migration timestamp: ${timestamp} found in ${paths.join(', ')}`,
         );
       }
     }
@@ -160,7 +160,7 @@ export class MigrationVerificationService implements OnModuleInit {
     for (const [name, paths] of seenNames) {
       if (paths.length > 1) {
         issues.push(
-          \Duplicate migration name \: \,
+          `Duplicate migration name: ${name} found in ${paths.join(', ')}`,
         );
       }
     }
