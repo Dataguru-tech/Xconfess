@@ -86,6 +86,8 @@ docker compose -f compose.yaml ps
 ### 3. Configure environment files
 
 > **Security reminder:** Never commit `.env` or `.env.local` files. Always commit only the `.env.example` template files (which contain no real secrets). Do not paste real secret values into issues, PR descriptions, or comments.
+>
+> **Local-only secret examples:** Use the placeholders below only for local development. Do not reuse these example values outside of a local dev environment, and do not treat them as secure production credentials.
 
 **Backend** - copy the sample and fill in the values marked `change-me`:
 
@@ -104,6 +106,18 @@ Required keys to set before first boot (everything else has safe defaults):
 | `ENCRYPTION_MASTER_KEY_v1` | 64-character hex master key for envelope encryption |
 | `STELLAR_SERVER_SECRET` | Stellar keypair secret for on-chain operations (testnet only) |
 | `TYPEORM_LOGGING` | Set to `true` only when debugging SQL; default is quiet local startup |
+
+Copy-paste-safe local dummy values (local dev only):
+
+```env
+JWT_SECRET=local-dev-jwt-secret-please-replace-with-32-plus-chars
+APP_SECRET=local-dev-app-secret-please-replace-with-32-plus-chars
+CONFESSION_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+ENCRYPTION_CURRENT_KEY_VERSION=v1
+ENCRYPTION_MASTER_KEY_v1=0000000000000000000000000000000000000000000000000000000000000000
+```
+
+These placeholder examples are intentionally long enough for local validation, but they are not secure secrets. Do not reuse them outside local development.
 
 Mail (`MAIL_HOST`, `MAIL_USER`, `MAIL_PASSWORD`) and Stellar contract IDs are pre-filled with testnet values in the example file and can be left as-is for local development. Leave `STELLAR_FEATURES_ENABLED=false` (default) to boot without enforcing every contract ID; set it to `true` only when you need full on-chain anchoring and tipping.
 
