@@ -258,6 +258,7 @@ export const DraftManager: React.FC<DraftManagerProps> = ({
           size="sm"
           onClick={() => setIsModalOpen(true)}
           aria-label={drafts.length > 0 ? `Manage drafts (${drafts.length} saved)` : "Manage drafts"}
+          title={drafts.length > 0 ? `Manage drafts (${drafts.length} saved)` : "Manage drafts"}
           className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <FileText className="h-4 w-4" aria-hidden="true" />
@@ -399,6 +400,7 @@ export const DraftManager: React.FC<DraftManagerProps> = ({
                       size="sm"
                       onClick={(e) => handleDeleteDraft(draft.id, e)}
                       aria-label={`Delete draft from ${formatDate(new Date(draft.savedAt))}`}
+                      title={`Delete draft from ${formatDate(new Date(draft.savedAt))}`}
                       className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       <Trash2 className="h-4 w-4 text-red-400" aria-hidden="true" />

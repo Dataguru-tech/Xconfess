@@ -492,6 +492,7 @@ export const EnhancedConfessionForm: React.FC<EnhancedConfessionFormProps> = ({
                       ? "Switch to edit mode"
                       : "Switch to preview mode"
                   }
+                  title={isPreviewMode ? "Switch to edit mode" : "Switch to preview mode"}
                   className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 >
                   {isPreviewMode ? (

@@ -122,7 +122,7 @@ export default function RegisterPage() {
               </span>
               <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                Auto sign-in
+                Automatic sign-in
               </span>
             </div>
           </div>
