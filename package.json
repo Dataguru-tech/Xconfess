@@ -11,6 +11,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
+    "preflight": "node scripts/check-node-version.js",
     "dev": "npm run dev:check && concurrently \"npm run dev --workspace=xconfess-backend\" \"npm run dev --workspace=xconfess-frontend\"",
     "setup:check": "node scripts/check-node-version.js",
     "env:bootstrap": "node scripts/bootstrap-env.js",
