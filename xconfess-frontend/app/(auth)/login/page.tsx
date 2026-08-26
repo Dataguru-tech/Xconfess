@@ -164,8 +164,13 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="text-sm text-[var(--primary-deep)] hover:text-[var(--primary)]">
-                <Link href="/forgot-password">Forgot password?</Link>
+              <div className="text-sm">
+                <Link
+                  href="/forgot-password"
+                  className="text-[var(--primary-deep)] hover:text-[var(--primary)]"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               <Button
