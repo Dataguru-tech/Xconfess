@@ -61,6 +61,12 @@ readinessProbe:
   periodSeconds: 15
 ```
 
+### Building the backend
+
+```bash
+npm run backend:build
+```
+
 ## What gets checked
 
 The readiness probe (`/api/health/ready`) checks:
