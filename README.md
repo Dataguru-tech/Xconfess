@@ -97,6 +97,8 @@ docker compose -f compose.yaml ps
 ### 3. Configure environment files
 
 > **Security reminder:** Never commit `.env` or `.env.local` files. Always commit only the `.env.example` template files (which contain no real secrets). Do not paste real secret values into issues, PR descriptions, or comments.
+>
+> **Local-only secret examples:** Use the placeholders below only for local development. Do not reuse these example values outside of a local dev environment, and do not treat them as secure production credentials.
 
 **Backend** - copy the sample and fill in the values marked `change-me`:
 
